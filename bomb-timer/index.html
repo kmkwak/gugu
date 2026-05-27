@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>💣 구구단 폭탄 해제 타이머</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@700&family=Jua&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  :root {
+    --pink: #ff7eb1;
+    --pink-deep: #d44d80;
+    --peach: #ffb085;
+    --yellow: #ffd966;
+    --mint: #7eebc4;
+    --mint-deep: #3bb88c;
+    --sky: #7ecbff;
+    --lavender: #c4a8e8;
+    --bomb-purple: #6b5b95;
+    --bomb-purple-light: #9c8fc4;
+    --bomb-purple-dark: #4a3d6e;
+    --fuse: #8b5a28;
+    --spark: #ffb300;
+    --ink: #4a3d6e;
+    --ink-soft: #7d6fa3;
+  }
+  html, body {
+    height: 100%;
+    background:
+      radial-gradient(circle at 18% 12%, rgba(255,195,220,0.95) 0%, transparent 48%),
+      radial-gradient(circle at 82% 18%, rgba(170,225,255,0.9) 0%, transparent 48%),
+      radial-gradient(circle at 50% 95%, rgba(255,235,170,0.7) 0%, transparent 50%),
+      linear-gradient(180deg, #fff5ee 0%, #ffe5f1 50%, #e7f4ff 100%);
+    background-attachment: fixed;
+    color: var(--ink);
+    font-family: 'Jua', sans-serif;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .bg-sparkle {
+    position: fixed;
+    font-size: 22px;
+    opacity: 0.5;
+    pointer-events: none;
+    z-index: 0;
+    animation: floatUpDown 5s ease-in-out infinite;
+  }
+  @keyframes floatUpDown {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-18px) rotate(20deg); }
+  }
+
+  .screen {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 16px;
+    z-index: 1;
+  }
+  .screen[hidden] { display: none; }
+
+  /* ============ START ============ */
+  .title {
+    font-family: 'Gaegu', cursive;
+    font-size: clamp(40px, 11vw, 60px);
+    text-align: center;
+    color: var(--pink);
+    text-shadow:
+      3px 3px 0 #fff,
+      5px 5px 0 var(--lavender),
+      0 0 24px rgba(255,126,177,0.4);
+    line-height: 1;
+    margin-bottom: 8px;
+    transform: rotate(-2deg);
+    animation: titleBounce 2.4s ease-in-out infinite;
+  }
+  @keyframes titleBounce {
+    0%, 100% { transform: rotate(-2deg) translateY(0); }
+    50% { transform: rotate(-2deg) translateY(-4px); }
+  }
+  .subtitle {
+    font-family: 'Jua', sans-serif;
+    font-size: 17px;
+    color: var(--ink-soft);
+    text-align: center;
+    margin-bottom: 22px;
+    line-height: 1.6;
+  }
+  .subtitle .hi {
+    background: linear-gradient(120deg, var(--yellow) 50%, transparent 50%);
+    padding: 0 6px;
+    color: var(--ink);
+    font-weight: 700;
+  }
+  .section-label {
+    font-family: 'Gaegu', cursive;
+    font-size: 20px;
+    color: var(--ink-soft);
+    margin: 18px 0 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-label::before, .section-label::after {
+    content: '✦';
+    color: var(--peach);
+    font-size: 16px;
+  }
+  .time-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    width: min(380px, 94vw);
+  }
+  .time-btn {
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 700;
+    font-size: 30px;
+    background: #fff;
+    border: 3px solid #ffe0eb;
+    border-radius: 24px;
+    color: var(--ink);
+    padding: 16px 0;
+    cursor: pointer;
+    transition: transform 0.08s, background 0.2s, border-color 0.2s;
+    box-shadow: 0 5px 0 #ffd0e0;
+  }
+  .time-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #ffd0e0; }
+  .time-btn small {
+    font-family: 'Jua', sans-serif;
+    font-size: 13px;
+    display: block;
+    margin-top: 2px;
+    opacity: 0.7;
+    font-weight: normal;
+  }
+  .time-btn.selected {
+    background: linear-gradient(180deg, var(--pink), #ff97c0);
+    border-color: var(--yellow);
+    color: #fff;
+    box-shadow: 0 5px 0 var(--pink-deep), 0 0 22px rgba(255,126,177,0.5);
+    transform: translateY(-3px);
+  }
+  .time-btn.selected:active { transform: translateY(0); box-shadow: 0 2px 0 var(--pink-deep); }
+
+  .start-btn {
+    margin-top: 30px;
+    font-family: 'Gaegu', cursive;
+    font-size: 34px;
+    background: linear-gradient(180deg, var(--mint), #4dd6a8);
+    color: #fff;
+    border: 4px solid #fff;
+    border-radius: 999px;
+    padding: 16px 60px;
+    cursor: pointer;
+    box-shadow:
+      0 7px 0 var(--mint-deep),
+      0 0 36px rgba(126,235,196,0.5);
+    text-shadow: 2px 2px 0 rgba(0,0,0,0.15);
+    animation: bigBounce 1.4s ease-in-out infinite;
+  }
+  .start-btn:active { transform: translateY(5px); box-shadow: 0 2px 0 var(--mint-deep); }
+  @keyframes bigBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+  .sound-toggle {
+    position: absolute;
+    top: 18px; right: 18px;
+    font-size: 24px;
+    background: #fff;
+    border: 3px solid var(--lavender);
+    border-radius: 50%;
+    width: 52px; height: 52px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 0 var(--lavender);
+  }
+  .sound-toggle:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--lavender); }
+
+  /* ============ GAME ============ */
+  .top-bar {
+    width: 100%;
+    max-width: 440px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 8px;
+    margin-bottom: 6px;
+    gap: 10px;
+  }
+  .timer-pill {
+    background: #fff;
+    border: 3px solid var(--sky);
+    border-radius: 999px;
+    padding: 9px 20px;
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 700;
+    font-size: 24px;
+    color: var(--ink);
+    box-shadow: 0 4px 0 #5db8ed;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+  .timer-pill.urgent {
+    border-color: var(--pink);
+    box-shadow: 0 4px 0 var(--pink-deep);
+    color: var(--pink);
+  }
+  .progress-stars {
+    display: flex;
+    gap: 5px;
+    flex-wrap: nowrap;
+  }
+  .progress-star {
+    width: 26px; height: 26px;
+    background: #fff;
+    border: 2.5px solid #ffd0e0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: transparent;
+    transition: all 0.4s cubic-bezier(0.34, 1.8, 0.64, 1);
+  }
+  .progress-star.filled {
+    background: linear-gradient(180deg, var(--yellow), var(--peach));
+    border-color: #fff;
+    color: #fff;
+    transform: scale(1.2);
+    box-shadow: 0 0 14px rgba(255,217,102,0.75);
+  }
+
+  /* Scene area */
+  .scene-stage {
+    width: 100%;
+    max-width: 380px;
+    aspect-ratio: 1;
+    position: relative;
+  }
+  .scene-svg {
+    width: 100%; height: 100%;
+    overflow: visible;
+  }
+  #spark {
+    filter: drop-shadow(0 0 4px rgba(255,179,0,0.6));
+  }
+
+  /* Bomb animations */
+  #bomb-wrap { transform-origin: 200px 250px; animation: bombBob 2.4s ease-in-out infinite; }
+  @keyframes bombBob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+  #bomb-wrap.wobble { animation: bombWobble 0.45s ease-out; }
+  @keyframes bombWobble {
+    0%, 100% { transform: rotate(0); }
+    20% { transform: rotate(-6deg) scale(1.04); }
+    50% { transform: rotate(5deg) scale(1.05); }
+    80% { transform: rotate(-2deg) scale(1.02); }
+  }
+  #bomb-wrap.defused { animation: defusedPose 1.8s ease-out forwards; }
+  @keyframes defusedPose {
+    0% { transform: rotate(0) scale(1); }
+    30% { transform: rotate(0) scale(1.15); }
+    100% { transform: rotate(0) scale(1.1); }
+  }
+  #bomb-wrap.exploding { animation: bombExplode 0.4s ease-out forwards; }
+  @keyframes bombExplode {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.4); opacity: 1; }
+    100% { transform: scale(0); opacity: 0; }
+  }
+
+  /* Bomb mouth: happy by default, surprised on wobble, peaceful on defuse */
+  #mouth-happy { opacity: 1; transition: opacity 0.3s; }
+  #mouth-surprised { opacity: 0; transition: opacity 0.3s; }
+  #mouth-peaceful { opacity: 0; transition: opacity 0.4s; }
+  #bomb-wrap.wobble #mouth-happy { opacity: 0; }
+  #bomb-wrap.wobble #mouth-surprised { opacity: 1; }
+  #bomb-wrap.defused #mouth-happy { opacity: 0; }
+  #bomb-wrap.defused #mouth-surprised { opacity: 0; }
+  #bomb-wrap.defused #mouth-peaceful { opacity: 1; }
+
+  /* Sweat drops appear as time runs low */
+  .sweat { opacity: 0; transition: opacity 0.5s; }
+  .sweat.show { opacity: 1; animation: sweatDrop 1.5s ease-in infinite; }
+  @keyframes sweatDrop {
+    0% { transform: translateY(0); opacity: 1; }
+    100% { transform: translateY(15px); opacity: 0; }
+  }
+
+  /* Heart/safe icon when defused */
+  #safe-icon {
+    opacity: 0;
+    transition: opacity 0.5s 0.3s, transform 0.6s 0.3s cubic-bezier(0.34, 1.8, 0.64, 1);
+    transform: scale(0);
+    transform-origin: 200px 250px;
+  }
+  #safe-icon.show {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  /* Tap area */
+  .tap-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+  }
+  .tap-helper {
+    font-family: 'Gaegu', cursive;
+    font-size: 20px;
+    color: var(--ink-soft);
+    text-align: center;
+    min-height: 24px;
+  }
+  .tap-btn {
+    position: relative;
+    width: 190px; height: 190px;
+    border-radius: 50%;
+    border: 7px solid #fff;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.1s;
+    overflow: visible;
+    font-family: 'Fredoka', sans-serif;
+    background: linear-gradient(180deg, var(--pink), #ff97c0);
+    box-shadow: 0 10px 0 var(--pink-deep), 0 0 48px rgba(255,126,177,0.45);
+  }
+  .tap-btn:active { transform: translateY(7px) scale(0.95); box-shadow: 0 3px 0 var(--pink-deep); }
+  .tap-btn.color-1 { background: linear-gradient(180deg, #ff7eb1, #ff97c0); box-shadow: 0 10px 0 var(--pink-deep), 0 0 38px rgba(255,126,177,0.45); }
+  .tap-btn.color-1:active { box-shadow: 0 3px 0 var(--pink-deep); }
+  .tap-btn.color-2 { background: linear-gradient(180deg, #ffa170, #ffbe8e); box-shadow: 0 10px 0 #d97a4a, 0 0 38px rgba(255,161,112,0.5); }
+  .tap-btn.color-2:active { box-shadow: 0 3px 0 #d97a4a; }
+  .tap-btn.color-3 { background: linear-gradient(180deg, #ffd47e, #ffe079); box-shadow: 0 10px 0 #d9a83b, 0 0 38px rgba(255,212,126,0.55); }
+  .tap-btn.color-3:active { box-shadow: 0 3px 0 #d9a83b; }
+  .tap-btn.color-4 { background: linear-gradient(180deg, #7eebc4, #4dd6a8); box-shadow: 0 10px 0 var(--mint-deep), 0 0 38px rgba(126,235,196,0.55); }
+  .tap-btn.color-4:active { box-shadow: 0 3px 0 var(--mint-deep); }
+  .tap-btn.color-5 { background: linear-gradient(180deg, #88d4ff, #5dafff); box-shadow: 0 10px 0 #4a8fd9, 0 0 38px rgba(136,212,255,0.55); }
+  .tap-btn.color-5:active { box-shadow: 0 3px 0 #4a8fd9; }
+  .tap-btn.color-final {
+    background: linear-gradient(180deg, #ffd966 0%, #ffa170 33%, #ff7eb1 66%, #c4a8e8 100%);
+    box-shadow: 0 10px 0 #a07ab8, 0 0 60px rgba(255,161,112,0.7);
+    animation: finalGlow 0.7s ease-in-out infinite;
+  }
+  .tap-btn.color-final:active { box-shadow: 0 3px 0 #a07ab8; }
+  @keyframes finalGlow {
+    0%, 100% { box-shadow: 0 10px 0 #a07ab8, 0 0 50px rgba(255,161,112,0.7); }
+    50% { box-shadow: 0 10px 0 #a07ab8, 0 0 90px rgba(255,217,102,1); }
+  }
+  .tap-num {
+    font-size: 88px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1;
+    text-shadow: 4px 4px 0 rgba(0,0,0,0.18);
+  }
+  .tap-label {
+    font-family: 'Jua', sans-serif;
+    font-size: 20px;
+    color: #fff;
+    margin-top: 4px;
+    text-shadow: 1px 1px 0 rgba(0,0,0,0.18);
+  }
+  .tap-btn.pop { animation: tapPop 0.45s cubic-bezier(0.34, 1.8, 0.64, 1); }
+  @keyframes tapPop {
+    0% { transform: scale(1); }
+    35% { transform: scale(1.16) rotate(-4deg); }
+    100% { transform: scale(1) rotate(0deg); }
+  }
+  .stop-link {
+    margin-top: 12px;
+    font-family: 'Jua', sans-serif;
+    font-size: 16px;
+    color: var(--ink-soft);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+
+  /* Particles */
+  .tap-particle {
+    position: fixed;
+    font-size: 26px;
+    pointer-events: none;
+    z-index: 60;
+    animation: tapParticle 1s ease-out forwards;
+  }
+  @keyframes tapParticle {
+    0% { transform: translate(0,0) scale(0.5) rotate(0deg); opacity: 1; }
+    100% { transform: translate(var(--tx), var(--ty)) scale(1.4) rotate(var(--rot)); opacity: 0; }
+  }
+  .confetti-piece {
+    position: fixed;
+    width: 12px; height: 16px;
+    top: -24px;
+    pointer-events: none;
+    z-index: 47;
+    animation: confettiFall linear forwards;
+  }
+  @keyframes confettiFall {
+    0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(110vh) rotate(720deg); opacity: 0.7; }
+  }
+
+  /* Explosion overlay */
+  .explosion {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 49;
+  }
+  .explosion-emoji {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    animation: explodeOut 1.2s ease-out forwards;
+  }
+  @keyframes explodeOut {
+    0% { transform: translate(-50%, -50%) scale(0.3) rotate(0); opacity: 1; }
+    100% { transform: translate(var(--tx), var(--ty)) scale(1.3) rotate(var(--rot)); opacity: 0; }
+  }
+  .boom-text {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%) scale(0) rotate(-15deg);
+    font-family: 'Gaegu', cursive;
+    font-size: clamp(70px, 20vw, 120px);
+    color: var(--yellow);
+    text-shadow:
+      4px 4px 0 var(--pink),
+      8px 8px 0 var(--pink-deep),
+      0 0 40px rgba(255,217,102,0.8);
+    z-index: 50;
+    pointer-events: none;
+    opacity: 0;
+    letter-spacing: 6px;
+  }
+  .boom-text.show { animation: boomIn 0.7s cubic-bezier(0.34, 1.8, 0.64, 1) forwards; }
+  @keyframes boomIn {
+    0% { transform: translate(-50%, -50%) scale(0) rotate(-25deg); opacity: 0; }
+    60% { transform: translate(-50%, -50%) scale(1.3) rotate(10deg); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(1) rotate(-8deg); opacity: 1; }
+  }
+
+  .flash {
+    position: fixed; inset: 0;
+    z-index: 48;
+    pointer-events: none;
+    opacity: 0;
+  }
+  .flash.peach { background: radial-gradient(circle, rgba(255,217,102,0.6), transparent 70%); }
+  .flash.show { animation: flashIn 0.6s; }
+  @keyframes flashIn {
+    0% { opacity: 0; }
+    30% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+
+  /* Result */
+  .result-emoji {
+    font-size: 120px;
+    margin-bottom: 12px;
+    animation: bigBounce 1.4s ease-in-out infinite;
+  }
+  .result-message {
+    font-family: 'Gaegu', cursive;
+    font-size: 30px;
+    color: var(--ink);
+    margin-bottom: 28px;
+    text-align: center;
+    line-height: 1.4;
+  }
+  .result-message.boom { color: var(--peach); }
+  .result-message .accent {
+    color: var(--mint-deep);
+    background: linear-gradient(120deg, rgba(126,235,196,0.4) 50%, transparent 50%);
+    padding: 0 6px;
+  }
+  .result-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    align-items: center;
+  }
+  .secondary-btn {
+    font-family: 'Jua', sans-serif;
+    font-size: 17px;
+    background: #fff;
+    border: 3px solid var(--lavender);
+    border-radius: 999px;
+    color: var(--ink);
+    padding: 13px 30px;
+    cursor: pointer;
+    box-shadow: 0 4px 0 var(--lavender);
+  }
+  .secondary-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--lavender); }
+
+  @media (max-height: 740px) {
+    .scene-stage { max-width: 240px; }
+    .tap-btn { width: 150px; height: 150px; }
+    .tap-num { font-size: 64px; }
+    .tap-label { font-size: 16px; }
+    .title { font-size: 34px; }
+    .section-label { margin: 10px 0 8px; font-size: 17px; }
+    .progress-star { width: 22px; height: 22px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-sparkle" style="top:10%; left:8%; animation-delay:0s;">✦</div>
+<div class="bg-sparkle" style="top:25%; right:12%; animation-delay:1s; color:#ffb085;">✦</div>
+<div class="bg-sparkle" style="bottom:30%; left:10%; animation-delay:2s; color:#7ecbff;">✧</div>
+<div class="bg-sparkle" style="bottom:15%; right:15%; animation-delay:3s; color:#ffd966;">✦</div>
+
+<!-- START -->
+<div class="screen" id="screen-start">
+  <button class="sound-toggle" id="sound-toggle" aria-label="소리">🔊</button>
+  <div class="title">구구단<br>폭탄 해제 타이머</div>
+  <div class="subtitle">
+    💣 둘이서 한 줄씩 번갈아 외우면서<br>
+    <span class="hi">9번 톡톡 해제 버튼을 눌러!</span>
+  </div>
+
+  <div class="section-label">시간 정하기</div>
+  <div class="time-grid">
+    <button class="time-btn" data-time="10">10<small>초</small></button>
+    <button class="time-btn" data-time="20">20<small>초</small></button>
+    <button class="time-btn selected" data-time="30">30<small>초</small></button>
+    <button class="time-btn" data-time="45">45<small>초</small></button>
+    <button class="time-btn" data-time="60">60<small>초</small></button>
+    <button class="time-btn" data-time="120">2<small>분</small></button>
+  </div>
+
+  <button class="start-btn" id="start-btn">시작! 💣</button>
+</div>
+
+<!-- GAME -->
+<div class="screen" id="screen-game" hidden>
+  <div class="top-bar">
+    <div class="timer-pill" id="timer-pill">⏰ <span id="countdown">30</span></div>
+    <div class="progress-stars" id="progress-stars"></div>
+  </div>
+
+  <div class="scene-stage">
+    <svg class="scene-svg" viewBox="0 0 400 400">
+      <defs>
+        <radialGradient id="bombGrad" cx="35%" cy="30%">
+          <stop offset="0%" stop-color="#a89ad0"/>
+          <stop offset="50%" stop-color="#6b5b95"/>
+          <stop offset="100%" stop-color="#4a3d6e"/>
+        </radialGradient>
+        <radialGradient id="sparkGrad">
+          <stop offset="0%" stop-color="#fff"/>
+          <stop offset="30%" stop-color="#ffeb3b"/>
+          <stop offset="100%" stop-color="#ff6b00"/>
+        </radialGradient>
+      </defs>
+
+      <!-- Ground shadow (subtle) -->
+      <ellipse cx="200" cy="350" rx="110" ry="14" fill="rgba(107,91,149,0.18)"/>
+
+      <!-- Bomb -->
+      <g id="bomb-wrap">
+        <!-- Body -->
+        <circle cx="200" cy="250" r="110" fill="url(#bombGrad)"/>
+
+        <!-- Highlight -->
+        <ellipse cx="160" cy="210" rx="28" ry="22" fill="rgba(255,255,255,0.25)"/>
+        <ellipse cx="152" cy="200" rx="11" ry="9" fill="rgba(255,255,255,0.55)"/>
+
+        <!-- Pink cheeks -->
+        <ellipse cx="148" cy="270" rx="13" ry="8" fill="rgba(255,160,200,0.65)"/>
+        <ellipse cx="252" cy="270" rx="13" ry="8" fill="rgba(255,160,200,0.65)"/>
+
+        <!-- Eyes -->
+        <circle cx="170" cy="240" r="14" fill="#fff"/>
+        <circle cx="230" cy="240" r="14" fill="#fff"/>
+        <circle cx="172" cy="243" r="8" fill="#2a1f4a"/>
+        <circle cx="232" cy="243" r="8" fill="#2a1f4a"/>
+        <circle cx="175" cy="240" r="3.5" fill="#fff"/>
+        <circle cx="235" cy="240" r="3.5" fill="#fff"/>
+
+        <!-- Mouths (only one visible at a time) -->
+        <path id="mouth-happy" d="M 175 285 Q 200 305 225 285" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round"/>
+        <ellipse id="mouth-surprised" cx="200" cy="290" rx="9" ry="11" fill="#2a1f4a"/>
+        <path id="mouth-peaceful" d="M 180 290 Q 200 295 220 290" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round"/>
+
+        <!-- Sweat drops (appear when urgent) -->
+        <g id="sweat-drops">
+          <ellipse class="sweat" id="sweat1" cx="125" cy="220" rx="4" ry="6" fill="#7ecbff" opacity="0"/>
+          <ellipse class="sweat" id="sweat2" cx="275" cy="220" rx="4" ry="6" fill="#7ecbff" opacity="0"/>
+        </g>
+
+        <!-- Fuse cap on top -->
+        <rect x="185" y="135" width="30" height="18" rx="3" fill="#4a3d6e"/>
+        <rect x="188" y="130" width="24" height="8" rx="2" fill="#5b4d7c"/>
+      </g>
+
+      <!-- Fuse path -->
+      <path id="fuse-track" d="M 200 130 C 220 95, 270 70, 320 55"
+            stroke="rgba(139,90,40,0.25)" stroke-width="8" fill="none" stroke-linecap="round"/>
+      <path id="fuse-path" d="M 200 130 C 220 95, 270 70, 320 55"
+            stroke="#8b5a28" stroke-width="7" fill="none" stroke-linecap="round"/>
+
+      <!-- Spark at end of fuse -->
+      <g id="spark">
+        <circle cx="320" cy="55" r="7" fill="url(#sparkGrad)"/>
+        <circle cx="320" cy="55" r="3" fill="#fff"/>
+      </g>
+
+      <!-- Safe icon (heart with check) shows on defuse -->
+      <g id="safe-icon">
+        <circle cx="200" cy="250" r="65" fill="#fff" opacity="0.95"/>
+        <text x="200" y="280" text-anchor="middle" font-size="80">💚</text>
+      </g>
+    </svg>
+  </div>
+
+  <div class="tap-area">
+    <div class="tap-helper" id="tap-helper">한 줄 외우고 톡톡!</div>
+    <button class="tap-btn color-1" id="tap-btn">
+      <span class="tap-num" id="tap-num">1</span>
+      <span class="tap-label">번째</span>
+    </button>
+    <button class="stop-link" id="stop-link">취소</button>
+  </div>
+
+  <div class="flash" id="flash"></div>
+  <div class="boom-text" id="boom-text">펑!</div>
+  <div class="explosion" id="explosion"></div>
+</div>
+
+<!-- RESULT -->
+<div class="screen" id="screen-result" hidden>
+  <div class="result-emoji" id="result-emoji">🎉</div>
+  <div class="result-message" id="result-message"></div>
+  <div class="result-actions">
+    <button class="start-btn" id="retry-btn">한 번 더! 🎯</button>
+    <button class="secondary-btn" id="back-btn">시간 다시 정하기</button>
+  </div>
+</div>
+
+<script>
+const state = {
+  duration: 30,
+  startTime: 0,
+  rafId: null,
+  locked: false,
+  soundOn: true,
+  audioCtx: null,
+  nextTickAt: 0,
+  count: 0,
+  totalTaps: 9,
+};
+
+// AUDIO
+function getCtx() {
+  if (!state.audioCtx) {
+    try { state.audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+    catch(e) { return null; }
+  }
+  return state.audioCtx;
+}
+function playTick(highPitch=false) {
+  if (!state.soundOn) return;
+  const ctx = getCtx(); if (!ctx) return;
+  const t = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = 'sine';
+  osc.frequency.value = highPitch ? 1100 : 700;
+  gain.gain.setValueAtTime(0.05, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+  osc.connect(gain).connect(ctx.destination);
+  osc.start(t); osc.stop(t + 0.05);
+}
+function playTap(step) {
+  if (!state.soundOn) return;
+  const ctx = getCtx(); if (!ctx) return;
+  const t = ctx.currentTime;
+  const base = 380 + step * 45;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = 'triangle';
+  osc.frequency.setValueAtTime(base * 2, t);
+  osc.frequency.exponentialRampToValueAtTime(base, t + 0.09);
+  gain.gain.setValueAtTime(0, t);
+  gain.gain.linearRampToValueAtTime(0.2, t + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.13);
+  osc.connect(gain).connect(ctx.destination);
+  osc.start(t); osc.stop(t + 0.13);
+}
+function playSuccess() {
+  if (!state.soundOn) return;
+  const ctx = getCtx(); if (!ctx) return;
+  const t = ctx.currentTime;
+  [523, 659, 784, 1047, 1319].forEach((f, i) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.value = f;
+    gain.gain.setValueAtTime(0, t + i*0.08);
+    gain.gain.linearRampToValueAtTime(0.2, t + i*0.08 + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + i*0.08 + 0.3);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(t + i*0.08); osc.stop(t + i*0.08 + 0.35);
+  });
+}
+function playBoom() {
+  if (!state.soundOn) return;
+  const ctx = getCtx(); if (!ctx) return;
+  const t = ctx.currentTime;
+  // Cartoonish "wah-wah-pong" instead of scary boom
+  [500, 380, 280].forEach((f, i) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(f * 1.5, t + i*0.1);
+    osc.frequency.exponentialRampToValueAtTime(f * 0.7, t + i*0.1 + 0.25);
+    gain.gain.setValueAtTime(0, t + i*0.1);
+    gain.gain.linearRampToValueAtTime(0.18, t + i*0.1 + 0.03);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + i*0.1 + 0.3);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(t + i*0.1); osc.stop(t + i*0.1 + 0.35);
+  });
+  // Soft thump (not scary low noise)
+  const osc = ctx.createOscillator();
+  const g2 = ctx.createGain();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(180, t);
+  osc.frequency.exponentialRampToValueAtTime(80, t + 0.25);
+  g2.gain.setValueAtTime(0.18, t);
+  g2.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+  osc.connect(g2).connect(ctx.destination);
+  osc.start(t); osc.stop(t + 0.3);
+}
+
+// START
+document.querySelectorAll('.time-btn').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('.time-btn').forEach(x => x.classList.remove('selected'));
+    b.classList.add('selected');
+    state.duration = parseInt(b.dataset.time);
+  });
+});
+
+document.getElementById('sound-toggle').addEventListener('click', (e) => {
+  state.soundOn = !state.soundOn;
+  e.currentTarget.textContent = state.soundOn ? '🔊' : '🔇';
+  if (state.soundOn) getCtx();
+});
+
+document.getElementById('start-btn').addEventListener('click', () => {
+  getCtx();
+  startGame();
+});
+
+// PROGRESS
+function buildStars() {
+  const c = document.getElementById('progress-stars');
+  c.innerHTML = '';
+  for (let i = 1; i <= state.totalTaps; i++) {
+    const s = document.createElement('div');
+    s.className = 'progress-star';
+    s.dataset.idx = i;
+    s.textContent = '★';
+    c.appendChild(s);
+  }
+}
+function fillStar(n) {
+  const star = document.querySelector(`.progress-star[data-idx="${n}"]`);
+  if (star) star.classList.add('filled');
+}
+
+// FUSE
+const fusePath = document.getElementById('fuse-path');
+const spark = document.getElementById('spark');
+const fuseTotalLen = fusePath.getTotalLength();
+fusePath.style.strokeDasharray = fuseTotalLen;
+
+function updateFuse(progress) {
+  const burned = progress * fuseTotalLen;
+  fusePath.style.strokeDashoffset = burned;
+  const sparkPos = fusePath.getPointAtLength(Math.max(0, fuseTotalLen - burned));
+  // Original spark center is at (320, 55) - move it to current position
+  spark.setAttribute('transform',
+    `translate(${sparkPos.x - 320}, ${sparkPos.y - 55})`);
+}
+
+// GAME
+function startGame() {
+  state.locked = false;
+  state.count = 0;
+  state.startTime = performance.now();
+  state.nextTickAt = 0;
+  document.getElementById('screen-start').hidden = true;
+  document.getElementById('screen-result').hidden = true;
+  document.getElementById('screen-game').hidden = false;
+  document.getElementById('timer-pill').classList.remove('urgent');
+  document.getElementById('countdown').textContent = state.duration;
+  document.getElementById('tap-helper').textContent = '한 줄 외우고 톡톡!';
+  document.getElementById('bomb-wrap').classList.remove('wobble', 'defused', 'exploding');
+  document.getElementById('safe-icon').classList.remove('show');
+  document.getElementById('boom-text').className = 'boom-text';
+  document.getElementById('explosion').innerHTML = '';
+  document.querySelectorAll('.sweat').forEach(s => s.classList.remove('show'));
+  // Reset spark visibility
+  spark.style.opacity = '1';
+  fusePath.style.opacity = '1';
+  buildStars();
+  updateFuse(0);
+  updateTapButton();
+  state.rafId = requestAnimationFrame(tick);
+}
+
+function updateTapButton() {
+  const btn = document.getElementById('tap-btn');
+  const num = document.getElementById('tap-num');
+  const label = btn.querySelector('.tap-label');
+  const next = state.count + 1;
+  if (state.count >= state.totalTaps) return;
+  num.textContent = next;
+  btn.className = 'tap-btn';
+  if (next <= 2) btn.classList.add('color-1');
+  else if (next <= 4) btn.classList.add('color-2');
+  else if (next <= 6) btn.classList.add('color-3');
+  else if (next <= 8) btn.classList.add('color-4');
+  else if (next === 9) btn.classList.add('color-final');
+  label.textContent = (next === 9) ? '마지막!' : '번째';
+}
+
+function tick(now) {
+  if (state.locked) return;
+  const elapsed = (now - state.startTime) / 1000;
+  const remaining = state.duration - elapsed;
+  const progress = Math.min(1, elapsed / state.duration);
+
+  updateFuse(progress);
+  document.getElementById('countdown').textContent = Math.max(0, Math.ceil(remaining));
+
+  const tickInterval = remaining > state.duration * 0.5 ? 1.2
+                     : remaining > state.duration * 0.25 ? 0.7
+                     : remaining > 0 ? 0.35 : 9999;
+  if (elapsed >= state.nextTickAt) {
+    playTick(remaining < state.duration * 0.3);
+    state.nextTickAt = elapsed + tickInterval;
+  }
+
+  if (remaining < state.duration * 0.3) {
+    document.getElementById('timer-pill').classList.add('urgent');
+    // Show sweat drops when nervous
+    document.querySelectorAll('.sweat').forEach(s => s.classList.add('show'));
+  }
+
+  if (remaining <= 0) {
+    boom();
+    return;
+  }
+  state.rafId = requestAnimationFrame(tick);
+}
+
+// Tap
+document.getElementById('tap-btn').addEventListener('click', (e) => {
+  if (state.locked) return;
+  state.count++;
+  playTap(state.count);
+  fillStar(state.count);
+  const bomb = document.getElementById('bomb-wrap');
+  bomb.classList.remove('wobble');
+  void bomb.offsetWidth;
+  bomb.classList.add('wobble');
+  spawnTapParticles(e.currentTarget);
+  const btn = e.currentTarget;
+  btn.classList.remove('pop');
+  void btn.offsetWidth;
+  btn.classList.add('pop');
+
+  const helper = document.getElementById('tap-helper');
+  if (state.count < state.totalTaps) {
+    helper.textContent = state.count % 2 === 0 ? '아빠/엄마 차례!' : '내 차례!';
+  }
+
+  if (state.count >= state.totalTaps) {
+    defuse();
+  } else {
+    updateTapButton();
+  }
+});
+
+document.getElementById('stop-link').addEventListener('click', () => {
+  state.locked = true;
+  if (state.rafId) cancelAnimationFrame(state.rafId);
+  document.getElementById('screen-game').hidden = true;
+  document.getElementById('screen-start').hidden = false;
+});
+
+function spawnTapParticles(btn) {
+  const rect = btn.getBoundingClientRect();
+  const cx = rect.left + rect.width/2;
+  const cy = rect.top + rect.height/2;
+  const emojis = ['⭐', '✨', '💫', '🌟', '💖', '🌸'];
+  for (let i = 0; i < 8; i++) {
+    const p = document.createElement('div');
+    p.className = 'tap-particle';
+    p.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+    p.style.left = cx + 'px';
+    p.style.top = cy + 'px';
+    const angle = (Math.PI * 2 * i) / 8 + Math.random()*0.5 - Math.PI/2;
+    const dist = 70 + Math.random()*50;
+    p.style.setProperty('--tx', `${Math.cos(angle)*dist}px`);
+    p.style.setProperty('--ty', `${Math.sin(angle)*dist}px`);
+    p.style.setProperty('--rot', (Math.random()*360 - 180) + 'deg');
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 1050);
+  }
+}
+
+function defuse() {
+  state.locked = true;
+  if (state.rafId) cancelAnimationFrame(state.rafId);
+  const elapsed = (performance.now() - state.startTime) / 1000;
+  playSuccess();
+  // Snip the fuse (fade out)
+  spark.style.transition = 'opacity 0.4s';
+  spark.style.opacity = '0';
+  fusePath.style.transition = 'opacity 0.4s';
+  fusePath.style.opacity = '0.3';
+  // Bomb becomes safe
+  setTimeout(() => {
+    document.getElementById('bomb-wrap').classList.add('defused');
+    document.getElementById('safe-icon').classList.add('show');
+    // Hide sweat drops
+    document.querySelectorAll('.sweat').forEach(s => s.classList.remove('show'));
+  }, 200);
+  spawnConfetti();
+  setTimeout(() => { showResult('success', elapsed); }, 2000);
+}
+
+function boom() {
+  state.locked = true;
+  playBoom();
+  flash();
+  document.getElementById('boom-text').classList.add('show');
+  // Hide the bomb (it "explodes" into nothing — emojis take its place)
+  document.getElementById('bomb-wrap').classList.add('exploding');
+  spawnExplosionEmojis();
+  setTimeout(() => { showResult('boom', 0); }, 2000);
+}
+
+function flash() {
+  const f = document.getElementById('flash');
+  f.className = 'flash peach show';
+  setTimeout(() => { f.className = 'flash peach'; }, 600);
+}
+
+function spawnExplosionEmojis() {
+  const ex = document.getElementById('explosion');
+  ex.innerHTML = '';
+  const emojis = ['💥', '✨', '⭐', '🌟', '💫', '🎈', '🌈', '☁️'];
+  for (let i = 0; i < 24; i++) {
+    const p = document.createElement('div');
+    p.className = 'explosion-emoji';
+    p.textContent = emojis[i % emojis.length];
+    p.style.fontSize = (28 + Math.random()*24) + 'px';
+    const angle = (Math.PI * 2 * i) / 24 + Math.random()*0.3;
+    const dist = 110 + Math.random()*150;
+    p.style.setProperty('--tx', `calc(-50% + ${Math.cos(angle)*dist}px)`);
+    p.style.setProperty('--ty', `calc(-50% + ${Math.sin(angle)*dist}px)`);
+    p.style.setProperty('--rot', (Math.random()*720 - 360) + 'deg');
+    p.style.animationDelay = (Math.random()*0.15) + 's';
+    ex.appendChild(p);
+  }
+  setTimeout(() => { ex.innerHTML = ''; }, 1400);
+}
+
+function spawnConfetti() {
+  const colors = ['#ff7eb1', '#ffd966', '#7eebc4', '#7ecbff', '#ffb085', '#c4a8e8'];
+  for (let i = 0; i < 80; i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti-piece';
+    c.style.left = Math.random()*100 + 'vw';
+    c.style.background = colors[Math.floor(Math.random()*colors.length)];
+    c.style.animationDuration = (1.6 + Math.random()*1.8) + 's';
+    c.style.animationDelay = (Math.random()*0.6) + 's';
+    c.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), 4000);
+  }
+}
+
+function showResult(kind, elapsed) {
+  document.getElementById('screen-game').hidden = true;
+  document.getElementById('screen-result').hidden = false;
+  document.getElementById('boom-text').className = 'boom-text';
+  const emoji = document.getElementById('result-emoji');
+  const msg = document.getElementById('result-message');
+  if (kind === 'success') {
+    const sec = elapsed.toFixed(1);
+    emoji.textContent = '🎉';
+    msg.className = 'result-message';
+    msg.innerHTML = `<span class="accent">${sec}초</span> 만에<br>해제 성공!`;
+  } else {
+    emoji.textContent = '💥';
+    msg.className = 'result-message boom';
+    msg.innerHTML = `펑! 시간이 부족했어.<br>다시 도전해봐!`;
+  }
+}
+
+document.getElementById('retry-btn').addEventListener('click', () => {
+  document.getElementById('screen-result').hidden = true;
+  startGame();
+});
+document.getElementById('back-btn').addEventListener('click', () => {
+  document.getElementById('screen-result').hidden = true;
+  document.getElementById('screen-start').hidden = false;
+});
+</script>
+</body>
+</html>

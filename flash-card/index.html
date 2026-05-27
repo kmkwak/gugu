@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1">
+<title>구구단 카드 ✨</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Fredoka:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #fef6e4;
+    --coral: #ff8b6c;
+    --coral-deep: #f76d4a;
+    --mint: #5ec5a8;
+    --mint-deep: #3fa886;
+    --sun: #ffd45a;
+    --ink: #2d2a4a;
+    --ink-soft: #6b6890;
+    --pink: #ffb3d1;
+    --sky: #a8d8ea;
+  }
+  
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overscroll-behavior: none; }
+  body {
+    font-family: 'Jua', -apple-system, sans-serif;
+    background: var(--cream);
+    background-image: 
+      radial-gradient(circle at 10% 20%, rgba(255, 180, 162, 0.35) 0%, transparent 40%),
+      radial-gradient(circle at 90% 80%, rgba(168, 216, 234, 0.35) 0%, transparent 40%),
+      radial-gradient(circle at 50% 50%, rgba(255, 211, 105, 0.15) 0%, transparent 60%);
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    -webkit-user-select: none;
+    user-select: none;
+    min-height: 100vh;
+  }
+  
+  .screen { display: none; width: 100%; max-width: 460px; }
+  .screen.active { display: block; animation: screenIn 0.4s ease; }
+  
+  @keyframes screenIn {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  /* ===== START SCREEN ===== */
+  .title {
+    font-size: 2.4rem;
+    color: var(--ink);
+    text-align: center;
+    margin-bottom: 0.2rem;
+    letter-spacing: -0.02em;
+  }
+  .title-deco {
+    display: inline-block;
+    transform: rotate(-8deg);
+    color: var(--coral);
+  }
+  .subtitle {
+    color: var(--ink-soft);
+    margin-bottom: 1.8rem;
+    text-align: center;
+    font-size: 1.05rem;
+  }
+  
+  .dan-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 1.2rem;
+  }
+  .dan-btn {
+    background: white;
+    border: 3px solid var(--ink);
+    border-radius: 18px;
+    padding: 18px 6px;
+    font-family: 'Fredoka', 'Jua', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--ink);
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+    box-shadow: 0 4px 0 var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+  }
+  .dan-btn .dan-suffix {
+    font-family: 'Jua', sans-serif;
+    font-size: 0.85rem;
+    margin-left: 1px;
+  }
+  .dan-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+  .dan-btn.selected {
+    background: var(--mint);
+    color: white;
+    box-shadow: 0 4px 0 var(--mint-deep);
+  }
+  .dan-btn.selected:active { box-shadow: 0 1px 0 var(--mint-deep); }
+  
+  .control-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 1.5rem;
+  }
+  .control-btn {
+    flex: 1;
+    background: white;
+    border: 3px solid var(--ink);
+    border-radius: 14px;
+    padding: 12px;
+    font-family: 'Jua', sans-serif;
+    font-size: 1rem;
+    color: var(--ink);
+    cursor: pointer;
+    box-shadow: 0 3px 0 var(--ink);
+  }
+  .control-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+  
+  .start-btn {
+    width: 100%;
+    background: var(--sun);
+    color: var(--ink);
+    border: 4px solid var(--ink);
+    border-radius: 22px;
+    padding: 20px;
+    font-family: 'Jua', sans-serif;
+    font-size: 1.5rem;
+    cursor: pointer;
+    box-shadow: 0 6px 0 var(--ink);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .start-btn:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 2px 0 var(--ink); }
+  .start-btn:disabled {
+    background: #e8e3d4;
+    color: var(--ink-soft);
+    box-shadow: 0 6px 0 #b5b0a0;
+    border-color: #b5b0a0;
+    cursor: not-allowed;
+  }
+  
+  /* ===== GAME SCREEN ===== */
+  .game-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+  .home-btn {
+    background: white;
+    border: 3px solid var(--ink);
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    font-size: 1.4rem;
+    cursor: pointer;
+    box-shadow: 0 4px 0 var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .home-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+  .counter {
+    background: white;
+    border: 3px solid var(--ink);
+    padding: 10px 20px;
+    border-radius: 26px;
+    font-family: 'Jua', sans-serif;
+    color: var(--ink);
+    box-shadow: 0 4px 0 var(--ink);
+    font-size: 1.05rem;
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+  }
+  .counter .num { 
+    font-family: 'Fredoka', sans-serif;
+    font-size: 1.25rem; 
+    color: var(--coral-deep); 
+    font-weight: 700;
+  }
+  
+  .card-container {
+    perspective: 1400px;
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    max-height: 68vh;
+    margin: 0 auto;
+    cursor: pointer;
+  }
+  .card {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 0.7s cubic-bezier(0.4, 0.0, 0.2, 1);
+  }
+  .card.flipped { transform: rotateY(180deg); }
+  .card-face {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    border-radius: 32px;
+    border: 5px solid var(--ink);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .card-front {
+    background: white;
+    transform: translateZ(1px);
+    box-shadow: 0 10px 0 var(--ink), 0 14px 30px rgba(45, 42, 74, 0.2);
+  }
+  .card-front::before {
+    content: "";
+    position: absolute;
+    width: 75px; height: 75px;
+    background: var(--pink);
+    border-radius: 50%;
+    top: 28px; left: 28px;
+    opacity: 0.55;
+  }
+  .card-front::after {
+    content: "";
+    position: absolute;
+    width: 55px; height: 55px;
+    background: var(--sky);
+    border-radius: 50%;
+    bottom: 38px; right: 32px;
+    opacity: 0.65;
+  }
+  .card-back {
+    background: var(--coral);
+    color: white;
+    transform: rotateY(180deg) translateZ(1px);
+    box-shadow: 0 10px 0 var(--ink), 0 14px 30px rgba(247, 109, 74, 0.4);
+  }
+  .card-back::before {
+    content: "✦  ✦  ✦  ✦  ✦";
+    position: absolute;
+    top: 32px;
+    font-size: 1.2rem;
+    color: var(--sun);
+    letter-spacing: 4px;
+    opacity: 0.95;
+  }
+  .card-back::after {
+    content: "✦  ✦  ✦  ✦  ✦";
+    position: absolute;
+    bottom: 68px;
+    font-size: 1.2rem;
+    color: var(--sun);
+    letter-spacing: 4px;
+    opacity: 0.95;
+  }
+  
+  .question {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 4.8rem;
+    font-weight: 700;
+    color: var(--ink);
+    z-index: 1;
+    letter-spacing: -0.02em;
+  }
+  .answer {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 7.5rem;
+    font-weight: 700;
+    z-index: 1;
+    text-shadow: 0 5px 0 var(--coral-deep), 0 8px 15px rgba(0,0,0,0.2);
+    line-height: 1;
+  }
+  .hint {
+    position: absolute;
+    bottom: 28px;
+    font-family: 'Jua', sans-serif;
+    font-size: 0.95rem;
+    color: var(--ink-soft);
+    z-index: 1;
+  }
+  .card-back .hint { color: white; opacity: 0.95; }
+  
+  @media (max-width: 380px) {
+    .title { font-size: 2rem; }
+    .question { font-size: 3.8rem; }
+    .answer { font-size: 6rem; }
+    .dan-btn { font-size: 1.2rem; padding: 16px 4px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="screen active" id="startScreen">
+  <h1 class="title">구구단 <span class="title-deco">카드!</span></h1>
+  <p class="subtitle">연습하고 싶은 단을 골라봐요 🎯</p>
+  
+  <div class="dan-grid" id="danGrid"></div>
+  
+  <div class="control-row">
+    <button class="control-btn" onclick="selectAll()">🎲 전체 랜덤</button>
+    <button class="control-btn" onclick="clearAll()">선택 해제</button>
+  </div>
+  
+  <button class="start-btn" id="startBtn" onclick="startGame()" disabled>단을 골라주세요</button>
+</div>
+
+<div class="screen" id="gameScreen">
+  <div class="game-header">
+    <button class="home-btn" onclick="goHome()" aria-label="처음으로">🏠</button>
+    <div class="counter"><span class="num" id="cardCount">0</span>장째</div>
+  </div>
+  
+  <div class="card-container" onclick="handleCardTap()">
+    <div class="card" id="card">
+      <div class="card-face card-front">
+        <div class="question" id="question">2 × 3</div>
+        <div class="hint">👆 탭하면 정답이 보여요</div>
+      </div>
+      <div class="card-face card-back">
+        <div class="answer" id="answer">6</div>
+        <div class="hint">👆 한 번 더 탭하면 다음 카드</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const selectedDan = new Set();
+  let isFlipped = false;
+  let cardCount = 0;
+  let currentProblem = null;
+  
+  // Build dan grid (2-9)
+  const danGrid = document.getElementById('danGrid');
+  for (let i = 2; i <= 9; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'dan-btn';
+    btn.innerHTML = `${i}<span class="dan-suffix">단</span>`;
+    btn.dataset.dan = i;
+    btn.onclick = () => toggleDan(i, btn);
+    danGrid.appendChild(btn);
+  }
+  
+  function toggleDan(dan, btn) {
+    if (selectedDan.has(dan)) {
+      selectedDan.delete(dan);
+      btn.classList.remove('selected');
+    } else {
+      selectedDan.add(dan);
+      btn.classList.add('selected');
+    }
+    updateStartBtn();
+  }
+  
+  function selectAll() {
+    selectedDan.clear();
+    document.querySelectorAll('.dan-btn').forEach(btn => {
+      selectedDan.add(parseInt(btn.dataset.dan));
+      btn.classList.add('selected');
+    });
+    updateStartBtn();
+  }
+  
+  function clearAll() {
+    selectedDan.clear();
+    document.querySelectorAll('.dan-btn').forEach(btn => btn.classList.remove('selected'));
+    updateStartBtn();
+  }
+  
+  function updateStartBtn() {
+    const btn = document.getElementById('startBtn');
+    if (selectedDan.size === 0) {
+      btn.disabled = true;
+      btn.textContent = '단을 골라주세요';
+    } else {
+      btn.disabled = false;
+      const isAll = selectedDan.size === 8;
+      if (isAll) {
+        btn.textContent = '🎲 전체 랜덤 시작!';
+      } else if (selectedDan.size >= 5) {
+        btn.textContent = `🚀 ${selectedDan.size}개 단 시작!`;
+      } else {
+        const list = [...selectedDan].sort((a,b)=>a-b).join('·');
+        btn.textContent = `🚀 ${list}단 시작!`;
+      }
+    }
+  }
+  
+  function startGame() {
+    if (selectedDan.size === 0) return;
+    document.getElementById('startScreen').classList.remove('active');
+    document.getElementById('gameScreen').classList.add('active');
+    cardCount = 0;
+    currentProblem = null;
+    document.getElementById('card').classList.remove('flipped');
+    isFlipped = false;
+    generateProblem();
+  }
+  
+  function goHome() {
+    document.getElementById('gameScreen').classList.remove('active');
+    document.getElementById('startScreen').classList.add('active');
+    document.getElementById('card').classList.remove('flipped');
+    isFlipped = false;
+  }
+  
+  function handleCardTap() {
+    const card = document.getElementById('card');
+    if (!isFlipped) {
+      // 문제 → 정답 보여주기
+      card.classList.add('flipped');
+      isFlipped = true;
+    } else {
+      // 정답 → 카드 뒤집으면서 새 문제로 교체
+      card.classList.remove('flipped');
+      isFlipped = false;
+      // 카드가 90도 회전한 시점(양면 모두 안 보임)에서 텍스트 교체
+      setTimeout(generateProblem, 350);
+    }
+  }
+  
+  function generateProblem() {
+    const dans = [...selectedDan];
+    let newProblem;
+    let attempts = 0;
+    do {
+      const dan = dans[Math.floor(Math.random() * dans.length)];
+      const multiplier = Math.floor(Math.random() * 9) + 1;
+      newProblem = { dan, multiplier };
+      attempts++;
+    } while (
+      attempts < 20 &&
+      currentProblem &&
+      currentProblem.dan === newProblem.dan &&
+      currentProblem.multiplier === newProblem.multiplier
+    );
+    
+    currentProblem = newProblem;
+    document.getElementById('question').textContent = `${newProblem.dan} × ${newProblem.multiplier}`;
+    document.getElementById('answer').textContent = newProblem.dan * newProblem.multiplier;
+    cardCount++;
+    document.getElementById('cardCount').textContent = cardCount;
+  }
+  
+  // Prevent zoom on double tap (iOS)
+  let lastTouchEnd = 0;
+  document.addEventListener('touchend', (e) => {
+    const now = Date.now();
+    if (now - lastTouchEnd <= 300) e.preventDefault();
+    lastTouchEnd = now;
+  }, { passive: false });
+</script>
+
+</body>
+</html>

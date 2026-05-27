@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>🎈 구구단 풍선 게임</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: linear-gradient(180deg, #4FC3F7 0%, #87CEEB 40%, #B0E0FF 70%, #E8F8FF 100%);
+    font-family: 'Fredoka One', cursive;
+    height: 100vh; overflow: hidden;
+    display: flex; flex-direction: column; align-items: center;
+  }
+
+  /* ── Clouds ── */
+  .cloud { position: fixed; pointer-events: none; z-index: 0; opacity: 0.85; }
+  .cloud svg { animation: cloudFloat 7s ease-in-out infinite; }
+  @keyframes cloudFloat { 0%,100%{transform:translateX(0)} 50%{transform:translateX(10px)} }
+
+  /* ════════════════════════════════
+     START / GAMEOVER SCREEN (full)
+  ════════════════════════════════ */
+  #start-screen {
+    position: fixed; inset: 0; z-index: 100;
+    background: linear-gradient(180deg, #4FC3F7 0%, #87CEEB 45%, #C9EEFF 100%);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: flex-start;
+    overflow-y: auto; -webkit-overflow-scrolling: touch;
+    padding: 0 0 20px;
+  }
+  #start-screen.hidden { display: none; }
+
+  .start-inner {
+    width: 100%; max-width: 420px;
+    padding: 30px 20px 20px;
+    display: flex; flex-direction: column; gap: 0;
+  }
+
+  .start-hero {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .start-hero .icon { font-size: 54px; display: block; animation: bounce 1.3s infinite; }
+  .start-hero h1   { font-size: 28px; color: white; text-shadow: 0 2px 8px rgba(0,0,0,0.15); margin-top: 6px; }
+
+  /* Option card */
+  .opt-card {
+    background: rgba(255,255,255,0.92);
+    border-radius: 22px;
+    padding: 16px 16px 14px;
+    margin-bottom: 12px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.1);
+  }
+  .opt-card-label {
+    font-size: 13px; color: #888; margin-bottom: 10px;
+    font-family: 'Nunito', sans-serif; font-weight: 900;
+    letter-spacing: 0.4px;
+  }
+
+  /* Dan grid: 전체 1줄 + 2~9 두 줄 4열 */
+  .dan-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .dan-all-wrap { grid-column: 1 / -1; }
+
+  /* Unified selectable button */
+  .opt-btn {
+    border: 2.5px solid #e2e2e2;
+    border-radius: 14px;
+    background: white;
+    font-family: 'Fredoka One', cursive;
+    color: #aaa;
+    cursor: pointer;
+    transition: all .14s;
+    display: flex; align-items: center; justify-content: center;
+    padding: 10px 6px;
+    font-size: 15px;
+    width: 100%;
+  }
+  .opt-btn:active { transform: scale(0.93); }
+  .opt-btn.active {
+    background: linear-gradient(135deg, #4D96FF, #A855F7);
+    border-color: transparent;
+    color: white;
+    box-shadow: 0 3px 12px rgba(77,150,255,0.38);
+    transform: scale(1.04);
+  }
+  .dan-all-wrap .opt-btn { font-size: 15px; padding: 11px; }
+
+  /* Speed grid */
+  .speed-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .speed-btn { padding: 12px 4px; font-size: 14px; }
+
+  /* Start button */
+  .btn-start-big {
+    width: 100%; border: none; border-radius: 22px;
+    padding: 16px; font-size: 24px;
+    font-family: 'Fredoka One', cursive;
+    cursor: pointer; color: white;
+    background: linear-gradient(135deg, #6BCB77, #4D96FF);
+    box-shadow: 0 6px 20px rgba(77,150,255,0.35);
+    transition: transform .1s;
+    margin-top: 4px;
+  }
+  .btn-start-big:active { transform: scale(0.97); }
+
+  /* ════════════════════════════════
+     GAME UI
+  ════════════════════════════════ */
+  #app {
+    width: 100%; max-width: 440px;
+    height: 100vh;
+    display: flex; flex-direction: column;
+    position: relative; z-index: 1;
+  }
+
+  /* Header */
+  #header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px 0; }
+  .hbox {
+    background: rgba(255,255,255,0.88); border-radius: 20px;
+    padding: 6px 16px; font-size: 20px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.1); min-width: 80px; text-align: center;
+  }
+  #score-box { color: #FF6B6B; }
+  #combo-box { color: #4D96FF; }
+  #lives-box { font-size: 24px; letter-spacing: 3px; background: none; box-shadow: none; }
+  .home-btn {
+    font-size: 20px; min-width: unset; padding: 6px 12px;
+    background: rgba(255,255,255,0.85); border: none; cursor: pointer;
+    transition: transform .1s;
+  }
+  .home-btn:active { transform: scale(0.9); }
+
+  /* Canvas */
+  #canvas { flex: 1; position: relative; overflow: hidden; }
+
+  /* Balloon */
+  .balloon-wrap {
+    position: absolute; display: flex; flex-direction: column;
+    align-items: center; cursor: pointer; user-select: none;
+    will-change: transform; transition: opacity 0.15s;
+  }
+  .balloon-wrap:active { transform: scale(0.92) !important; }
+
+  /* Feedback */
+  #feedback {
+    position: absolute; top: 28%; left: 50%;
+    transform: translateX(-50%) scale(0);
+    background: #6BCB77; color: white;
+    padding: 10px 26px; border-radius: 30px; font-size: 22px;
+    z-index: 50; white-space: nowrap;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    pointer-events: none; opacity: 0;
+  }
+  #feedback.show { animation: feedbackPop 0.85s ease forwards; }
+  @keyframes feedbackPop {
+    0%   { transform: translateX(-50%) scale(0.4); opacity: 0; }
+    25%  { transform: translateX(-50%) scale(1.15); opacity: 1; }
+    70%  { transform: translateX(-50%) scale(1); opacity: 1; }
+    100% { transform: translateX(-50%) scale(0.9); opacity: 0; }
+  }
+
+  /* Particles */
+  .particle {
+    position: absolute; width: 10px; height: 10px;
+    border-radius: 50%; pointer-events: none;
+    animation: particle 0.55s ease-out forwards;
+  }
+  @keyframes particle {
+    0%   { transform: translate(0,0) scale(1); opacity: 1; }
+    100% { transform: translate(var(--dx),var(--dy)) scale(0); opacity: 0; }
+  }
+
+  /* Question box */
+  #question-box {
+    background: white; border-radius: 24px;
+    padding: 14px 20px 16px; margin: 0 14px 14px;
+    text-align: center;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.1);
+    border: 3px solid rgba(77,150,255,0.15);
+    position: relative;
+  }
+  #question-box.shake { animation: shake 0.45s ease; }
+  @keyframes shake {
+    0%,100%{transform:translateX(0)} 20%{transform:translateX(-14px)}
+    40%{transform:translateX(14px)} 60%{transform:translateX(-9px)} 80%{transform:translateX(9px)}
+  }
+  #q-hint     { font-size: 12px; color: #ccc; margin-bottom: 2px; letter-spacing: 1px; }
+  #q-equation { font-size: 48px; font-weight: bold; color: #2D3748; letter-spacing: 2px; }
+  #q-equation .qa    { color: #4D96FF; }
+  #q-equation .qb    { color: #FF6B6B; }
+  #q-equation .qmark { color: #FFD93D; }
+  #q-equation .qdot  { color: #ccc; margin: 0 5px; }
+
+  /* Game Over overlay */
+  #gameover-screen {
+    position: fixed; inset: 0; z-index: 100;
+    background: rgba(30,80,140,0.55);
+    backdrop-filter: blur(6px);
+    display: flex; align-items: center; justify-content: center;
+  }
+  #gameover-screen.hidden { display: none; }
+  .go-card {
+    background: white; border-radius: 28px;
+    padding: 28px 28px 24px; text-align: center;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+    width: 88%; max-width: 340px;
+  }
+  .go-card .icon { font-size: 50px; display: block; animation: bounce 1.2s infinite; }
+  .go-card h2    { font-size: 30px; color: #FF6B6B; margin: 6px 0 4px; }
+  .go-card .score { font-size: 20px; color: #4D96FF; }
+  .go-card .score span { color: #FF9F43; }
+  .go-card .info  { font-size: 12px; color: #bbb; margin: 4px 0 18px;
+                    font-family: 'Nunito', sans-serif; font-weight: 700; }
+  .go-btn {
+    display: block; width: 100%; border: none; border-radius: 18px;
+    padding: 13px; font-size: 18px;
+    font-family: 'Fredoka One', cursive;
+    cursor: pointer; color: white; margin-bottom: 8px;
+    transition: transform .1s;
+  }
+  .go-btn:active { transform: scale(0.96); }
+  .go-btn-again  { background: linear-gradient(135deg,#6BCB77,#4D96FF); }
+  .go-btn-option { background: linear-gradient(135deg,#FF9F43,#FF6B6B); }
+
+  @keyframes heartbeat { 0%,100%{transform:scale(1)} 50%{transform:scale(1.2)} }
+  @keyframes bounce    { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+</style>
+</head>
+<body>
+
+<!-- Clouds -->
+<div class="cloud" style="top:3%;left:2%">
+  <svg width="130" height="65" viewBox="0 0 130 65" style="animation-duration:7s">
+    <ellipse cx="65" cy="44" rx="55" ry="23" fill="white"/>
+    <ellipse cx="42" cy="35" rx="30" ry="23" fill="white"/>
+    <ellipse cx="82" cy="30" rx="32" ry="26" fill="white"/>
+    <ellipse cx="60" cy="25" rx="24" ry="19" fill="white"/>
+  </svg>
+</div>
+<div class="cloud" style="top:8%;left:57%">
+  <svg width="95" height="50" viewBox="0 0 95 50" style="animation-duration:9s;animation-delay:1.5s">
+    <ellipse cx="47" cy="34" rx="40" ry="18" fill="white"/>
+    <ellipse cx="30" cy="27" rx="22" ry="18" fill="white"/>
+    <ellipse cx="60" cy="23" rx="24" ry="20" fill="white"/>
+  </svg>
+</div>
+<div class="cloud" style="top:19%;left:24%">
+  <svg width="110" height="55" viewBox="0 0 110 55" style="animation-duration:11s;animation-delay:3s">
+    <ellipse cx="55" cy="38" rx="47" ry="20" fill="white"/>
+    <ellipse cx="35" cy="30" rx="26" ry="20" fill="white"/>
+    <ellipse cx="70" cy="26" rx="28" ry="22" fill="white"/>
+  </svg>
+</div>
+
+<!-- ══ START SCREEN (full page) ══ -->
+<div id="start-screen">
+  <div class="start-inner">
+    <div class="start-hero">
+      <span class="icon">🎈</span>
+      <h1>구구단 풍선 게임</h1>
+    </div>
+
+    <!-- 단 선택 -->
+    <div class="opt-card">
+      <div class="opt-card-label">📚 연습할 단을 골라요 (여러 개 선택 가능)</div>
+      <div class="dan-grid">
+        <div class="dan-all-wrap">
+          <button class="opt-btn active" id="btn-all" onclick="clickDanAll()">🎲 전체 랜덤</button>
+        </div>
+        <button class="opt-btn" onclick="clickDan(2)">2단</button>
+        <button class="opt-btn" onclick="clickDan(3)">3단</button>
+        <button class="opt-btn" onclick="clickDan(4)">4단</button>
+        <button class="opt-btn" onclick="clickDan(5)">5단</button>
+        <button class="opt-btn" onclick="clickDan(6)">6단</button>
+        <button class="opt-btn" onclick="clickDan(7)">7단</button>
+        <button class="opt-btn" onclick="clickDan(8)">8단</button>
+        <button class="opt-btn" onclick="clickDan(9)">9단</button>
+      </div>
+    </div>
+
+    <!-- 속도 선택 -->
+    <div class="opt-card">
+      <div class="opt-card-label">💨 풍선 속도</div>
+      <div class="speed-grid">
+        <button class="opt-btn speed-btn" id="speed-slow"   onclick="clickSpeed('slow')">🐢 느리게</button>
+        <button class="opt-btn speed-btn active" id="speed-normal" onclick="clickSpeed('normal')">🚶 보통</button>
+        <button class="opt-btn speed-btn" id="speed-fast"   onclick="clickSpeed('fast')">🐇 빠르게</button>
+      </div>
+    </div>
+
+    <button class="btn-start-big" onclick="startGame()">시작! 🚀</button>
+  </div>
+</div>
+
+<!-- ══ GAME OVER SCREEN ══ -->
+<div id="gameover-screen" class="hidden">
+  <div class="go-card">
+    <span class="icon">🎈</span>
+    <h2>게임 오버!</h2>
+    <div class="score">최종 점수: <span id="go-score-val">0</span>점</div>
+    <div class="info" id="go-info"></div>
+    <button class="go-btn go-btn-again"  onclick="startGame()">🔄 같은 설정으로 다시</button>
+    <button class="go-btn go-btn-option" onclick="showOptions()">⚙️ 옵션 변경</button>
+  </div>
+</div>
+
+<!-- ══ GAME UI ══ -->
+<div id="app">
+  <div id="header">
+    <div class="hbox" id="score-box">⭐ 0</div>
+    <div class="hbox" id="lives-box">❤️❤️❤️</div>
+    <div class="hbox" id="combo-box">콤보 0</div>
+    <button class="hbox home-btn" onclick="goHome()">🏠</button>
+  </div>
+  <div id="canvas">
+    <div id="feedback"></div>
+  </div>
+  <div id="question-box">
+    <div id="q-hint">정답 풍선을 터치하세요</div>
+    <div id="q-equation">
+      <span class="qa" id="qa">-</span>
+      <span class="qdot">×</span>
+      <span class="qb" id="qb">-</span>
+      <span class="qdot">=</span>
+      <span class="qmark">?</span>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── Palette ── */
+const COLORS = [
+  {body:'#FF6B6B',shine:'#FF9999',shadow:'#CC4444',str:'#FF6B6B'},
+  {body:'#FFD93D',shine:'#FFE87A',shadow:'#CCB000',str:'#FFD93D'},
+  {body:'#6BCB77',shine:'#9DE8A7',shadow:'#3A9946',str:'#6BCB77'},
+  {body:'#4D96FF',shine:'#85BAFF',shadow:'#1A6ACC',str:'#4D96FF'},
+  {body:'#FF6FC8',shine:'#FF9DDB',shadow:'#CC3D99',str:'#FF6FC8'},
+  {body:'#A855F7',shine:'#C78DF5',shadow:'#7C22CC',str:'#A855F7'},
+  {body:'#FF9F43',shine:'#FFB970',shadow:'#CC6E00',str:'#FF9F43'},
+  {body:'#00C9A7',shine:'#4DE8CC',shadow:'#009978',str:'#00C9A7'},
+];
+const SPEEDS = {
+  slow:  {base:0.9,  rand:0.3},
+  normal:{base:1.6,  rand:0.5},
+  fast:  {base:2.8,  rand:0.7},
+};
+
+/* ── Option state ── */
+let selDans  = 'all';   // 'all' | Set<number>
+let selSpeed = 'normal';
+
+/* ── Game state ── */
+let score=0, combo=0, lives=3;
+let gameRunning=false, gameOver=false;
+let question={};
+let balloons=[], balloonEls={};
+let animId=null, lastTs=null, clock=0;
+
+const canvas     = document.getElementById('canvas');
+const qBox       = document.getElementById('question-box');
+const scoreBox   = document.getElementById('score-box');
+const comboBox   = document.getElementById('combo-box');
+const livesBox   = document.getElementById('lives-box');
+const feedbackEl = document.getElementById('feedback');
+const startScr   = document.getElementById('start-screen');
+const goScr      = document.getElementById('gameover-screen');
+
+/* ── Option handlers ── */
+function clickDanAll() {
+  selDans = 'all';
+  updateDanUI();
+}
+function clickDan(n) {
+  if (selDans === 'all') selDans = new Set();
+  if (selDans.has(n)) {
+    selDans.delete(n);
+    if (selDans.size === 0) selDans = 'all';
+  } else {
+    selDans.add(n);
+  }
+  updateDanUI();
+}
+function clickSpeed(k) {
+  selSpeed = k;
+  // update speed buttons
+  ['slow','normal','fast'].forEach(s => {
+    document.getElementById('speed-'+s).classList.toggle('active', s === k);
+  });
+}
+
+function updateDanUI() {
+  const isAll = selDans === 'all';
+  document.getElementById('btn-all').classList.toggle('active', isAll);
+  // individual dan buttons: query by onclick attribute
+  document.querySelectorAll('.dan-grid .opt-btn:not(#btn-all)').forEach(btn => {
+    const n = parseInt(btn.textContent);
+    btn.classList.toggle('active', !isAll && selDans.has(n));
+  });
+}
+
+function showOptions() {
+  goScr.classList.add('hidden');
+  startScr.classList.remove('hidden');
+}
+
+/* ── Balloon SVG ── */
+function balloonSVG(color, number) {
+  return `<svg width="70" height="90" viewBox="0 0 70 90" style="display:block;filter:drop-shadow(0 4px 8px rgba(0,0,0,0.22))">
+    <ellipse cx="35" cy="36" rx="28" ry="32" fill="${color.body}"/>
+    <ellipse cx="26" cy="20" rx="8" ry="10" fill="${color.shine}" opacity=".5"/>
+    <ellipse cx="22" cy="16" rx="4" ry="5" fill="white" opacity=".35"/>
+    <ellipse cx="40" cy="55" rx="14" ry="8" fill="${color.shadow}" opacity=".22"/>
+    <ellipse cx="35" cy="67" rx="3.5" ry="4" fill="${color.shadow}"/>
+    <path d="M35 71 Q30 78 35 85 Q38 90 35 90" stroke="${color.str}" stroke-width="1.5" fill="none" opacity=".7"/>
+    <text x="35" y="42" text-anchor="middle" dominant-baseline="middle"
+      font-size="20" font-weight="900" font-family="'Fredoka One',cursive"
+      fill="white" stroke="rgba(0,0,0,0.18)" stroke-width="3" paint-order="stroke">${number}</text>
+  </svg>`;
+}
+
+/* ── Question ── */
+function newQuestion() {
+  const list = selDans === 'all' ? [2,3,4,5,6,7,8,9] : [...selDans];
+  const a = list[Math.floor(Math.random()*list.length)];
+  const b = Math.ceil(Math.random()*9);
+  return {a, b, answer: a*b};
+}
+
+/* ── Balloons ── */
+function makeBalloons(answer) {
+  const nums = new Set([answer]);
+  while (nums.size < 6) nums.add(Math.floor(Math.random()*81)+1);
+  const sp = SPEEDS[selSpeed];
+  const canvasH = canvas.offsetHeight || 500;
+  return [...nums].sort(()=>Math.random()-.5).map((n,i)=>({
+    id: Date.now()+i+Math.random(),
+    number: n, color: COLORS[i%COLORS.length],
+    xPct: 8+(i%6)*14+(Math.random()*4-2),
+    y: canvasH+80+i*60+Math.random()*30,
+    speed: sp.base+Math.random()*sp.rand,
+    wobble: Math.random()*Math.PI*2, popping: false,
+  }));
+}
+function createBalloonEl(b) {
+  const el = document.createElement('div');
+  el.className = 'balloon-wrap';
+  el.innerHTML = balloonSVG(b.color, b.number);
+  el.addEventListener('pointerdown', e=>{ e.preventDefault(); onTap(b.id,el); });
+  canvas.appendChild(el);
+  balloonEls[b.id] = el;
+}
+function removeBalloonEl(id) {
+  const el = balloonEls[id];
+  if (el) { el.remove(); delete balloonEls[id]; }
+}
+
+/* ── Tap ── */
+function onTap(id, el) {
+  if (!gameRunning || gameOver) return;
+  const b = balloons.find(x=>x.id===id);
+  if (!b || b.popping) return;
+  b.popping = true;
+  const rect = el.getBoundingClientRect();
+  const cr   = canvas.getBoundingClientRect();
+  spawnParticles(rect.left-cr.left+35, rect.top-cr.top+36, b.color.body);
+  el.style.opacity = '0';
+
+  if (b.number === question.answer) {
+    combo++;
+    const bonus = combo>=3 ? combo : 1;
+    score += 10*bonus;
+    updateHeader();
+    showFeedback(combo>=3 ? `🔥 ${combo} COMBO! +${10*bonus}` : `✓ 정답! +10`, '#6BCB77');
+    setTimeout(()=>{ removeBalloonEl(id); nextRound(); }, 320);
+  } else {
+    combo=0; lives--;
+    updateHeader();
+    showFeedback('✗ 틀렸어요!', '#FF6B6B');
+    qBox.classList.add('shake');
+    setTimeout(()=>qBox.classList.remove('shake'), 500);
+    setTimeout(()=>{ removeBalloonEl(id); b.popping=false; }, 300);
+    if (lives<=0) setTimeout(endGame, 400);
+  }
+}
+
+/* ── Particles ── */
+function spawnParticles(cx, cy, color) {
+  for (let i=0; i<9; i++) {
+    const a = (i/9)*360, d = 35+Math.random()*25;
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.background = color;
+    p.style.left = (cx-5)+'px'; p.style.top = (cy-5)+'px';
+    p.style.setProperty('--dx', (Math.cos(a*Math.PI/180)*d)+'px');
+    p.style.setProperty('--dy', (Math.sin(a*Math.PI/180)*d)+'px');
+    canvas.appendChild(p);
+    setTimeout(()=>p.remove(), 600);
+  }
+}
+
+/* ── Feedback ── */
+let fbTimer=null;
+function showFeedback(text, color) {
+  clearTimeout(fbTimer);
+  feedbackEl.textContent=text; feedbackEl.style.background=color;
+  feedbackEl.classList.remove('show'); void feedbackEl.offsetWidth;
+  feedbackEl.classList.add('show');
+  fbTimer = setTimeout(()=>feedbackEl.classList.remove('show'), 900);
+}
+
+/* ── Header ── */
+function updateHeader() {
+  scoreBox.textContent = `⭐ ${score}`;
+  comboBox.style.color = combo>=3 ? '#FF9F43' : '#4D96FF';
+  comboBox.textContent = combo>=2 ? `🔥×${combo}` : `콤보 ${combo}`;
+  livesBox.innerHTML = [0,1,2].map(i=>{
+    const alive = i<lives;
+    return `<span style="opacity:${alive?1:.25};display:inline-block;
+      animation:${alive?'heartbeat 1.5s infinite':'none'};
+      animation-delay:${i*.3}s">❤️</span>`;
+  }).join('');
+}
+
+/* ── Loop ── */
+function loop(ts) {
+  if (!gameRunning) return;
+  if (!lastTs) lastTs=ts;
+  const dt=(ts-lastTs)/16; lastTs=ts; clock+=dt*0.018;
+  const cH=canvas.offsetHeight||500, cW=canvas.offsetWidth||420;
+  balloons.forEach(b=>{
+    if (b.popping) return;
+    b.y -= b.speed*dt;
+    const wx=Math.sin(clock*2.2+b.wobble)*1.4;
+    if (b.y < -100) { b.y=cH+60+Math.random()*60; b.xPct=8+Math.random()*82; }
+    const el=balloonEls[b.id];
+    if (el) el.style.transform=`translate(${(b.xPct/100)*cW+wx-35}px,${b.y}px)`;
+  });
+  animId=requestAnimationFrame(loop);
+}
+
+/* ── Next round ── */
+function nextRound() {
+  balloons.forEach(b=>removeBalloonEl(b.id));
+  question=newQuestion();
+  balloons=makeBalloons(question.answer);
+  balloons.forEach(b=>createBalloonEl(b));
+  document.getElementById('qa').textContent = question.a;
+  document.getElementById('qb').textContent = question.b;
+}
+
+/* ── Home ── */
+function goHome() {
+  gameRunning=false; gameOver=false;
+  cancelAnimationFrame(animId);
+  balloons.forEach(b=>removeBalloonEl(b.id));
+  balloons=[]; balloonEls={};
+  goScr.classList.add('hidden');
+  startScr.classList.remove('hidden');
+}
+
+/* ── Start ── */
+function startGame() {
+  startScr.classList.add('hidden');
+  goScr.classList.add('hidden');
+  cancelAnimationFrame(animId);
+  balloons.forEach(b=>removeBalloonEl(b.id));
+  balloons=[]; balloonEls={};
+  score=0; combo=0; lives=3;
+  gameOver=false; gameRunning=true;
+  lastTs=null; clock=0;
+  updateHeader();
+  question=newQuestion();
+  balloons=makeBalloons(question.answer);
+  balloons.forEach(b=>createBalloonEl(b));
+  document.getElementById('qa').textContent=question.a;
+  document.getElementById('qb').textContent=question.b;
+  animId=requestAnimationFrame(loop);
+}
+
+/* ── End ── */
+function endGame() {
+  gameRunning=false; gameOver=true;
+  cancelAnimationFrame(animId);
+  balloons.forEach(b=>removeBalloonEl(b.id));
+  balloons=[];
+  const danLabel = selDans==='all' ? '전체 단' : [...selDans].sort((a,b)=>a-b).map(n=>n+'단').join(', ');
+  const spLabel  = {slow:'🐢 느리게',normal:'🚶 보통',fast:'🐇 빠르게'}[selSpeed];
+  document.getElementById('go-score-val').textContent = score;
+  document.getElementById('go-info').textContent = `${danLabel} · ${spLabel}`;
+  goScr.classList.remove('hidden');
+}
+</script>
+</body>
+</html>

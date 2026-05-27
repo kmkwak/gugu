@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🥚 구구단 알 부화 타이머</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@700&family=Jua&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  :root {
+    --pink: #ff7eb1;
+    --pink-deep: #d44d80;
+    --peach: #ffb085;
+    --yellow: #ffd966;
+    --mint: #7eebc4;
+    --mint-deep: #3bb88c;
+    --sky: #7ecbff;
+    --lavender: #c4a8e8;
+    --cream: #fffaf0;
+    --ink: #4a3d6e;
+    --ink-soft: #7d6fa3;
+  }
+  html, body {
+    height: 100%;
+    background:
+      radial-gradient(circle at 18% 12%, rgba(255,195,220,0.95) 0%, transparent 48%),
+      radial-gradient(circle at 82% 18%, rgba(170,225,255,0.9) 0%, transparent 48%),
+      radial-gradient(circle at 50% 95%, rgba(255,235,170,0.7) 0%, transparent 50%),
+      linear-gradient(180deg, #fff5ee 0%, #ffe5f1 50%, #e7f4ff 100%);
+    background-attachment: fixed;
+    color: var(--ink);
+    font-family: 'Jua', sans-serif;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .bg-sparkle {
+    position: fixed;
+    font-size: 22px;
+    opacity: 0.5;
+    pointer-events: none;
+    z-index: 0;
+    animation: floatUpDown 5s ease-in-out infinite;
+  }
+  @keyframes floatUpDown {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-18px) rotate(20deg); }
+  }
+
+  .screen {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 16px;
+    z-index: 1;
+  }
+  .screen[hidden] { display: none; }
+
+  /* ============ START ============ */
+  .title {
+    font-family: 'Gaegu', cursive;
+    font-size: clamp(40px, 11vw, 60px);
+    text-align: center;
+    color: var(--pink);
+    text-shadow:
+      3px 3px 0 #fff,
+      5px 5px 0 var(--lavender),
+      0 0 24px rgba(255,126,177,0.4);
+    line-height: 1;
+    margin-bottom: 8px;
+    transform: rotate(-2deg);
+    animation: titleBounce 2.4s ease-in-out infinite;
+  }
+  @keyframes titleBounce {
+    0%, 100% { transform: rotate(-2deg) translateY(0); }
+    50% { transform: rotate(-2deg) translateY(-4px); }
+  }
+  .subtitle {
+    font-family: 'Jua', sans-serif;
+    font-size: 17px;
+    color: var(--ink-soft);
+    text-align: center;
+    margin-bottom: 22px;
+    line-height: 1.6;
+  }
+  .subtitle .hi {
+    background: linear-gradient(120deg, var(--yellow) 50%, transparent 50%);
+    padding: 0 6px;
+    color: var(--ink);
+    font-weight: 700;
+  }
+  .section-label {
+    font-family: 'Gaegu', cursive;
+    font-size: 20px;
+    color: var(--ink-soft);
+    margin: 18px 0 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-label::before, .section-label::after {
+    content: '✦';
+    color: var(--peach);
+    font-size: 16px;
+  }
+  .time-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    width: min(380px, 94vw);
+  }
+  .time-btn {
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 700;
+    font-size: 30px;
+    background: #fff;
+    border: 3px solid #ffe0eb;
+    border-radius: 24px;
+    color: var(--ink);
+    padding: 16px 0;
+    cursor: pointer;
+    transition: transform 0.08s, background 0.2s, border-color 0.2s;
+    box-shadow: 0 5px 0 #ffd0e0;
+  }
+  .time-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #ffd0e0; }
+  .time-btn small {
+    font-family: 'Jua', sans-serif;
+    font-size: 13px;
+    display: block;
+    margin-top: 2px;
+    opacity: 0.7;
+    font-weight: normal;
+  }
+  .time-btn.selected {
+    background: linear-gradient(180deg, var(--pink), #ff97c0);
+    border-color: var(--yellow);
+    color: #fff;
+    box-shadow: 0 5px 0 var(--pink-deep), 0 0 22px rgba(255,126,177,0.5);
+    transform: translateY(-3px);
+  }
+  .time-btn.selected:active { transform: translateY(0); box-shadow: 0 2px 0 var(--pink-deep); }
+
+  .start-btn {
+    margin-top: 30px;
+    font-family: 'Gaegu', cursive;
+    font-size: 34px;
+    background: linear-gradient(180deg, var(--mint), #4dd6a8);
+    color: #fff;
+    border: 4px solid #fff;
+    border-radius: 999px;
+    padding: 16px 60px;
+    cursor: pointer;
+    box-shadow:
+      0 7px 0 var(--mint-deep),
+      0 0 36px rgba(126,235,196,0.5);
+    text-shadow: 2px 2px 0 rgba(0,0,0,0.15);
+    animation: bigBounce 1.4s ease-in-out infinite;
+  }
+  .start-btn:active { transform: translateY(5px); box-shadow: 0 2px 0 var(--mint-deep); }
+  @keyframes bigBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+  .sound-toggle {
+    position: absolute;
+    top: 18px; right: 18px;
+    font-size: 24px;
+    background: #fff;
+    border: 3px solid var(--lavender);
+    border-radius: 50%;
+    width: 52px; height: 52px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 0 var(--lavender);
+  }
+  .sound-toggle:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--lavender); }
+
+  /* ============ GAME ============ */
+  .top-bar {
+    width: 100%;
+    max-width: 440px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 8px;
+    margin-bottom: 6px;
+    gap: 10px;
+  }
+  .timer-pill {
+    background: #fff;
+    border: 3px solid var(--sky);
+    border-radius: 999px;
+    padding: 9px 20px;
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 700;
+    font-size: 24px;
+    color: var(--ink);
+    box-shadow: 0 4px 0 #5db8ed;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+  .timer-pill.urgent {
+    border-color: var(--pink);
+    box-shadow: 0 4px 0 var(--pink-deep);
+    color: var(--pink);
+  }
+  .progress-stars {
+    display: flex;
+    gap: 5px;
+    flex-wrap: nowrap;
+  }
+  .progress-star {
+    width: 26px; height: 26px;
+    background: #fff;
+    border: 2.5px solid #ffd0e0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: transparent;
+    transition: all 0.4s cubic-bezier(0.34, 1.8, 0.64, 1);
+  }
+  .progress-star.filled {
+    background: linear-gradient(180deg, var(--yellow), var(--peach));
+    border-color: #fff;
+    color: #fff;
+    transform: scale(1.2);
+    box-shadow: 0 0 14px rgba(255,217,102,0.75);
+  }
+
+  /* Scene area */
+  .scene-stage {
+    width: 100%;
+    max-width: 380px;
+    aspect-ratio: 1;
+    position: relative;
+  }
+  .scene-svg {
+    width: 100%; height: 100%;
+    border-radius: 28px;
+    overflow: hidden;
+    box-shadow:
+      0 10px 28px rgba(74,61,110,0.18),
+      inset 0 0 0 4px rgba(255,255,255,0.5);
+  }
+
+  /* Egg layers and animations */
+  #egg-wrap { transform-origin: 200px 380px; transition: transform 0.6s; }
+  #egg-wrap.sleeping { transform: translate(0, 10px) rotate(7deg); }
+  #egg-wrap.wobble { animation: eggWobble 0.45s ease-out; }
+  @keyframes eggWobble {
+    0%, 100% { transform: rotate(0); }
+    20% { transform: rotate(-6deg) scale(1.03); }
+    50% { transform: rotate(5deg) scale(1.04); }
+    80% { transform: rotate(-2deg) scale(1.01); }
+  }
+  #egg-wrap.sleeping.wobble { /* prevent shake when sleeping */
+    animation: none;
+  }
+  #egg-breath { animation: eggBreath 2.6s ease-in-out infinite; transform-origin: 200px 380px; }
+  @keyframes eggBreath {
+    0%, 100% { transform: scale(1, 1); }
+    50% { transform: scale(1.025, 0.985); }
+  }
+
+  .crack {
+    stroke: #6b4423;
+    stroke-width: 2.5;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: 0;
+    transition: opacity 0.5s ease-out;
+  }
+  .crack.visible { opacity: 0.85; }
+
+  #egg-face { opacity: 0; transition: opacity 0.6s; }
+  #egg-wrap.sleeping #egg-face { opacity: 1; }
+
+  #egg-left-half, #egg-right-half {
+    transform-origin: 200px 340px;
+    transition: transform 1s cubic-bezier(0.5, 0, 0.5, 1.2), opacity 0.3s;
+    opacity: 0;
+  }
+  #egg-left-half.split { transform: translate(-34px, 12px) rotate(-32deg); opacity: 1; }
+  #egg-right-half.split { transform: translate(34px, 12px) rotate(32deg); opacity: 1; }
+  #egg-whole.hatched { opacity: 0; transition: opacity 0.3s; }
+
+  .zzz {
+    font-family: 'Gaegu', cursive;
+    fill: #fff;
+    opacity: 0;
+    font-weight: bold;
+  }
+  .zzz.show { opacity: 1; animation: zzzFloat 2.4s ease-out infinite; }
+  @keyframes zzzFloat {
+    0% { transform: translateY(0); opacity: 1; }
+    100% { transform: translateY(-36px); opacity: 0; }
+  }
+
+  .cloud { animation: cloudDrift 35s linear infinite; }
+  @keyframes cloudDrift {
+    from { transform: translateX(0); }
+    to { transform: translateX(40px); }
+  }
+  .cloud-2 { animation-duration: 50s; animation-direction: reverse; }
+
+  #bird { animation: birdFly 8s ease-in-out infinite; transform-origin: center; }
+  @keyframes birdFly {
+    0%, 100% { transform: translate(280px, 70px); }
+    50% { transform: translate(290px, 60px); }
+  }
+  #bird-wings { animation: wingFlap 0.5s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+  @keyframes wingFlap {
+    0%, 100% { transform: scaleY(1); }
+    50% { transform: scaleY(0.6); }
+  }
+
+  /* Tap area */
+  .tap-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+  }
+  .tap-helper {
+    font-family: 'Gaegu', cursive;
+    font-size: 20px;
+    color: var(--ink-soft);
+    text-align: center;
+    min-height: 24px;
+  }
+  .tap-btn {
+    position: relative;
+    width: 190px; height: 190px;
+    border-radius: 50%;
+    border: 7px solid #fff;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.1s;
+    overflow: visible;
+    font-family: 'Fredoka', sans-serif;
+    background: linear-gradient(180deg, var(--pink), #ff97c0);
+    box-shadow: 0 10px 0 var(--pink-deep), 0 0 48px rgba(255,126,177,0.45);
+  }
+  .tap-btn:active { transform: translateY(7px) scale(0.95); box-shadow: 0 3px 0 var(--pink-deep); }
+  .tap-btn.color-1 { background: linear-gradient(180deg, #ff7eb1, #ff97c0); box-shadow: 0 10px 0 var(--pink-deep), 0 0 38px rgba(255,126,177,0.45); }
+  .tap-btn.color-1:active { box-shadow: 0 3px 0 var(--pink-deep); }
+  .tap-btn.color-2 { background: linear-gradient(180deg, #ffa170, #ffbe8e); box-shadow: 0 10px 0 #d97a4a, 0 0 38px rgba(255,161,112,0.5); }
+  .tap-btn.color-2:active { box-shadow: 0 3px 0 #d97a4a; }
+  .tap-btn.color-3 { background: linear-gradient(180deg, #ffd47e, #ffe079); box-shadow: 0 10px 0 #d9a83b, 0 0 38px rgba(255,212,126,0.55); }
+  .tap-btn.color-3:active { box-shadow: 0 3px 0 #d9a83b; }
+  .tap-btn.color-4 { background: linear-gradient(180deg, #7eebc4, #4dd6a8); box-shadow: 0 10px 0 var(--mint-deep), 0 0 38px rgba(126,235,196,0.55); }
+  .tap-btn.color-4:active { box-shadow: 0 3px 0 var(--mint-deep); }
+  .tap-btn.color-5 { background: linear-gradient(180deg, #88d4ff, #5dafff); box-shadow: 0 10px 0 #4a8fd9, 0 0 38px rgba(136,212,255,0.55); }
+  .tap-btn.color-5:active { box-shadow: 0 3px 0 #4a8fd9; }
+  .tap-btn.color-final {
+    background: linear-gradient(180deg, #ffd966 0%, #ffa170 33%, #ff7eb1 66%, #c4a8e8 100%);
+    box-shadow: 0 10px 0 #a07ab8, 0 0 60px rgba(255,161,112,0.7);
+    animation: finalGlow 0.7s ease-in-out infinite;
+  }
+  .tap-btn.color-final:active { box-shadow: 0 3px 0 #a07ab8; }
+  @keyframes finalGlow {
+    0%, 100% { box-shadow: 0 10px 0 #a07ab8, 0 0 50px rgba(255,161,112,0.7); }
+    50% { box-shadow: 0 10px 0 #a07ab8, 0 0 90px rgba(255,217,102,1); }
+  }
+  .tap-num {
+    font-size: 88px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1;
+    text-shadow: 4px 4px 0 rgba(0,0,0,0.18);
+  }
+  .tap-label {
+    font-family: 'Jua', sans-serif;
+    font-size: 20px;
+    color: #fff;
+    margin-top: 4px;
+    text-shadow: 1px 1px 0 rgba(0,0,0,0.18);
+  }
+  .tap-btn.pop { animation: tapPop 0.45s cubic-bezier(0.34, 1.8, 0.64, 1); }
+  @keyframes tapPop {
+    0% { transform: scale(1); }
+    35% { transform: scale(1.16) rotate(-4deg); }
+    100% { transform: scale(1) rotate(0deg); }
+  }
+  .stop-link {
+    margin-top: 12px;
+    font-family: 'Jua', sans-serif;
+    font-size: 16px;
+    color: var(--ink-soft);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+
+  /* Particles */
+  .tap-particle {
+    position: fixed;
+    font-size: 26px;
+    pointer-events: none;
+    z-index: 60;
+    animation: tapParticle 1s ease-out forwards;
+  }
+  @keyframes tapParticle {
+    0% { transform: translate(0,0) scale(0.5) rotate(0deg); opacity: 1; }
+    100% { transform: translate(var(--tx), var(--ty)) scale(1.4) rotate(var(--rot)); opacity: 0; }
+  }
+  .confetti-piece {
+    position: fixed;
+    width: 12px; height: 16px;
+    top: -24px;
+    pointer-events: none;
+    z-index: 47;
+    animation: confettiFall linear forwards;
+  }
+  @keyframes confettiFall {
+    0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(110vh) rotate(720deg); opacity: 0.7; }
+  }
+
+  /* Result */
+  .result-emoji {
+    font-size: 120px;
+    margin-bottom: 12px;
+    animation: bigBounce 1.4s ease-in-out infinite;
+  }
+  .result-message {
+    font-family: 'Gaegu', cursive;
+    font-size: 30px;
+    color: var(--ink);
+    margin-bottom: 28px;
+    text-align: center;
+    line-height: 1.4;
+  }
+  .result-message.sleep { color: var(--ink-soft); }
+  .result-message .accent {
+    color: var(--mint-deep);
+    background: linear-gradient(120deg, rgba(126,235,196,0.4) 50%, transparent 50%);
+    padding: 0 6px;
+  }
+  .result-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    align-items: center;
+  }
+  .secondary-btn {
+    font-family: 'Jua', sans-serif;
+    font-size: 17px;
+    background: #fff;
+    border: 3px solid var(--lavender);
+    border-radius: 999px;
+    color: var(--ink);
+    padding: 13px 30px;
+    cursor: pointer;
+    box-shadow: 0 4px 0 var(--lavender);
+  }
+  .secondary-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--lavender); }
+
+  @media (max-height: 740px) {
+    .scene-stage { max-width: 240px; }
+    .tap-btn { width: 150px; height: 150px; }
+    .tap-num { font-size: 64px; }
+    .tap-label { font-size: 16px; }
+    .title { font-size: 34px; }
+    .section-label { margin: 10px 0 8px; font-size: 17px; }
+    .progress-star { width: 22px; height: 22px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-sparkle" style="top:10%; left:8%; animation-delay:0s;">✦</div>
+<div class="bg-sparkle" style="top:25%; right:12%; animation-delay:1s; color:#ffb085;">✦</div>
+<div class="bg-sparkle" style="bottom:30%; left:10%; animation-delay:2s; color:#7ecbff;">✧</div>
+<div class="bg-sparkle" style="bottom:15%; right:15%; animation-delay:3s; color:#ffd966;">✦</div>
+
+<!-- START -->
+<div class="screen" id="screen-start">
+  <button class="sound-toggle" id="sound-toggle" aria-label="소리">🔊</button>
+  <div class="title">구구단<br>알 부화 타이머</div>
+  <div class="subtitle">
+    🥚 둘이서 한 줄씩 번갈아 외우면서<br>
+    <span class="hi">9번 톡톡 두드리면 부화 성공!</span>
+  </div>
+
+  <div class="section-label">시간 정하기</div>
+  <div class="time-grid">
+    <button class="time-btn" data-time="10">10<small>초</small></button>
+    <button class="time-btn" data-time="20">20<small>초</small></button>
+    <button class="time-btn selected" data-time="30">30<small>초</small></button>
+    <button class="time-btn" data-time="45">45<small>초</small></button>
+    <button class="time-btn" data-time="60">60<small>초</small></button>
+    <button class="time-btn" data-time="120">2<small>분</small></button>
+  </div>
+
+  <button class="start-btn" id="start-btn">시작! 🐣</button>
+</div>
+
+<!-- GAME -->
+<div class="screen" id="screen-game" hidden>
+  <div class="top-bar">
+    <div class="timer-pill" id="timer-pill">⏰ <span id="countdown">30</span></div>
+    <div class="progress-stars" id="progress-stars"></div>
+  </div>
+
+  <div class="scene-stage">
+    <svg class="scene-svg" viewBox="0 0 400 400" preserveAspectRatio="xMidYMid slice">
+      <defs>
+        <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop id="sky-top-stop" offset="0%" stop-color="#B8E0FF"/>
+          <stop id="sky-mid-stop" offset="100%" stop-color="#FFE5B4"/>
+        </linearGradient>
+        <radialGradient id="sunGrad">
+          <stop offset="0%" stop-color="#FFF59D"/>
+          <stop offset="60%" stop-color="#FFD700"/>
+          <stop offset="100%" stop-color="#FFA500"/>
+        </radialGradient>
+        <radialGradient id="moonGrad">
+          <stop offset="0%" stop-color="#FFFEF7"/>
+          <stop offset="100%" stop-color="#E8E2D0"/>
+        </radialGradient>
+      </defs>
+
+      <!-- Sky -->
+      <rect id="sky" x="0" y="0" width="400" height="320" fill="url(#skyGrad)"/>
+
+      <!-- Stars -->
+      <g id="stars">
+        <circle class="star" cx="60" cy="40" r="1.8" fill="#fff" opacity="0"/>
+        <circle class="star" cx="140" cy="70" r="2.2" fill="#fff" opacity="0"/>
+        <circle class="star" cx="220" cy="35" r="1.8" fill="#fff" opacity="0"/>
+        <circle class="star" cx="300" cy="90" r="2.8" fill="#fff" opacity="0"/>
+        <circle class="star" cx="350" cy="50" r="1.8" fill="#fff" opacity="0"/>
+        <circle class="star" cx="80" cy="120" r="1.8" fill="#fff" opacity="0"/>
+        <circle class="star" cx="180" cy="140" r="2.2" fill="#fff" opacity="0"/>
+        <circle class="star" cx="320" cy="160" r="1.8" fill="#fff" opacity="0"/>
+      </g>
+
+      <!-- Clouds -->
+      <g id="clouds">
+        <g class="cloud" id="cloud-1" transform="translate(80, 75)" opacity="0.95">
+          <ellipse cx="0" cy="0" rx="24" ry="13" fill="#fff"/>
+          <ellipse cx="18" cy="-5" rx="20" ry="11" fill="#fff"/>
+          <ellipse cx="-14" cy="3" rx="16" ry="9" fill="#fff"/>
+          <ellipse cx="10" cy="6" rx="22" ry="9" fill="#fff"/>
+        </g>
+        <g class="cloud cloud-2" id="cloud-2" transform="translate(280, 130)" opacity="0.85">
+          <ellipse cx="0" cy="0" rx="20" ry="10" fill="#fff"/>
+          <ellipse cx="15" cy="-3" rx="16" ry="9" fill="#fff"/>
+          <ellipse cx="-10" cy="4" rx="13" ry="7" fill="#fff"/>
+        </g>
+        <g class="cloud" id="cloud-3" transform="translate(180, 180)" opacity="0.7">
+          <ellipse cx="0" cy="0" rx="18" ry="8" fill="#fff"/>
+          <ellipse cx="14" cy="-3" rx="14" ry="7" fill="#fff"/>
+        </g>
+      </g>
+
+      <!-- Bird (flies across sky) -->
+      <g id="bird">
+        <g id="bird-wings">
+          <path d="M 0 0 Q 4 -5 8 0 Q 12 -5 16 0" stroke="#6b5b95" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        </g>
+      </g>
+
+      <!-- Sun -->
+      <g id="sun" transform="translate(50, 150)">
+        <circle r="36" fill="#FFD700" opacity="0.3"/>
+        <circle id="sun-body" r="24" fill="url(#sunGrad)"/>
+      </g>
+
+      <!-- Moon -->
+      <g id="moon" transform="translate(350, 130)" opacity="0">
+        <circle r="26" fill="#FFF" opacity="0.25"/>
+        <circle r="21" fill="url(#moonGrad)"/>
+        <circle cx="-7" cy="-4" r="3.5" fill="#D8D2C0" opacity="0.5"/>
+        <circle cx="5" cy="3" r="2.5" fill="#D8D2C0" opacity="0.5"/>
+        <circle cx="-2" cy="8" r="2" fill="#D8D2C0" opacity="0.5"/>
+      </g>
+
+      <!-- Hills -->
+      <path d="M 0 280 Q 80 235 160 258 Q 240 280 320 248 Q 380 228 400 250 L 400 320 L 0 320 Z"
+            fill="#b3d4b8" opacity="0.7"/>
+      <path d="M 0 295 Q 100 268 200 285 Q 300 302 400 275 L 400 320 L 0 320 Z"
+            fill="#94c79c" opacity="0.8"/>
+
+      <!-- Ground -->
+      <rect x="0" y="310" width="400" height="90" fill="#b8e6b8"/>
+      <ellipse cx="200" cy="320" rx="240" ry="32" fill="#9bd29e" opacity="0.55"/>
+
+      <!-- Grass tufts -->
+      <g fill="#7eb87e">
+        <path d="M 25 322 L 28 312 L 31 322 Z"/>
+        <path d="M 75 324 L 78 314 L 81 324 Z"/>
+        <path d="M 125 320 L 128 310 L 131 320 Z"/>
+        <path d="M 285 324 L 288 313 L 291 324 Z"/>
+        <path d="M 340 322 L 343 312 L 346 322 Z"/>
+        <path d="M 370 326 L 373 316 L 376 326 Z"/>
+      </g>
+
+      <!-- Flowers in grass -->
+      <g id="flowers">
+        <g transform="translate(45, 332)">
+          <circle r="3.5" fill="#ff9eb5"/>
+          <circle r="1.5" fill="#fff"/>
+        </g>
+        <g transform="translate(98, 336)">
+          <circle r="3" fill="#ffd966"/>
+          <circle r="1.2" fill="#fff"/>
+        </g>
+        <g transform="translate(305, 330)">
+          <circle r="3.5" fill="#c4a8e8"/>
+          <circle r="1.5" fill="#fff"/>
+        </g>
+        <g transform="translate(355, 336)">
+          <circle r="3" fill="#ff9eb5"/>
+          <circle r="1.2" fill="#fff"/>
+        </g>
+        <g transform="translate(20, 340)">
+          <circle r="2.5" fill="#ffd966"/>
+        </g>
+        <g transform="translate(380, 340)">
+          <circle r="2.5" fill="#88d4ff"/>
+        </g>
+      </g>
+
+      <!-- Nest -->
+      <g id="nest">
+        <ellipse cx="200" cy="382" rx="98" ry="20" fill="#6b4423" opacity="0.3"/>
+        <ellipse cx="200" cy="378" rx="88" ry="22" fill="#9c7340"/>
+        <path d="M 125 378 Q 158 367 197 374" stroke="#6b4423" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <path d="M 142 384 Q 180 372 218 381" stroke="#5a3818" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <path d="M 200 374 Q 238 365 275 376" stroke="#6b4423" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <path d="M 170 388 Q 220 380 265 384" stroke="#5a3818" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <ellipse cx="200" cy="370" rx="58" ry="11" fill="#5a3818" opacity="0.45"/>
+        <!-- Little leaves on the nest -->
+        <path d="M 130 370 Q 134 364 140 367 Q 137 372 130 370 Z" fill="#7eb87e"/>
+        <path d="M 263 372 Q 268 366 274 369 Q 271 374 263 372 Z" fill="#94c79c"/>
+      </g>
+
+      <!-- Egg group: wraps wobble, sleeping tilt -->
+      <g id="egg-wrap">
+        <!-- breathing layer -->
+        <g id="egg-breath">
+          <!-- Whole egg -->
+          <g id="egg-whole">
+            <ellipse cx="200" cy="340" rx="44" ry="54" fill="#fff5cc"/>
+            <!-- Spots -->
+            <ellipse cx="183" cy="318" rx="4" ry="3" fill="#e8b878" opacity="0.5"/>
+            <ellipse cx="216" cy="325" rx="3" ry="2.5" fill="#e8b878" opacity="0.5"/>
+            <ellipse cx="195" cy="358" rx="3.5" ry="2.5" fill="#e8b878" opacity="0.5"/>
+            <ellipse cx="221" cy="350" rx="2.5" ry="2" fill="#e8b878" opacity="0.5"/>
+            <ellipse cx="178" cy="345" rx="2.5" ry="2" fill="#e8b878" opacity="0.5"/>
+            <!-- Highlight -->
+            <ellipse cx="183" cy="315" rx="11" ry="15" fill="rgba(255,255,255,0.55)"/>
+            <ellipse cx="180" cy="310" rx="4" ry="6" fill="rgba(255,255,255,0.85)"/>
+            <!-- Sleeping face (hidden by default) -->
+            <g id="egg-face">
+              <path d="M 184 334 Q 188 338 192 334" stroke="#6b4423" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+              <path d="M 208 334 Q 212 338 216 334" stroke="#6b4423" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+              <path d="M 192 352 Q 200 356 208 352" stroke="#6b4423" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <ellipse cx="172" cy="342" rx="5" ry="3" fill="#ffb0c8" opacity="0.6"/>
+              <ellipse cx="228" cy="342" rx="5" ry="3" fill="#ffb0c8" opacity="0.6"/>
+            </g>
+            <!-- Cracks -->
+            <g id="cracks">
+              <path class="crack" data-idx="1" d="M 172 308 L 178 312 L 174 318 L 180 322"/>
+              <path class="crack" data-idx="2" d="M 224 312 L 220 318 L 226 322 L 222 328"/>
+              <path class="crack" data-idx="3" d="M 165 340 L 172 344 L 168 350"/>
+              <path class="crack" data-idx="4" d="M 233 340 L 227 346 L 233 352"/>
+              <path class="crack" data-idx="5" d="M 196 295 L 200 300 L 196 306 L 202 310"/>
+              <path class="crack" data-idx="6" d="M 175 365 L 182 370 L 178 376"/>
+              <path class="crack" data-idx="7" d="M 222 368 L 228 373 L 222 378"/>
+              <path class="crack" data-idx="8" d="M 192 335 L 200 340 L 196 348 L 204 352"/>
+              <path class="crack" data-idx="9" d="M 200 288 L 198 305 L 203 322 L 198 342 L 202 362 L 198 382"/>
+            </g>
+          </g>
+          <!-- Split halves -->
+          <path id="egg-left-half" d="M 200 290 Q 156 295 156 340 Q 156 390 200 394 Z" fill="#fff5cc" stroke="#e0c8a0" stroke-width="1.5"/>
+          <path id="egg-right-half" d="M 200 290 Q 244 295 244 340 Q 244 390 200 394 Z" fill="#fff5cc" stroke="#e0c8a0" stroke-width="1.5"/>
+        </g>
+        <!-- Zzz (sleep) -->
+        <text class="zzz" id="zzz1" x="244" y="308" style="font-size:34px;">z</text>
+        <text class="zzz" id="zzz2" x="258" y="290" style="font-size:26px;">z</text>
+        <text class="zzz" id="zzz3" x="270" y="276" style="font-size:20px;">z</text>
+      </g>
+
+      <!-- Hatched baby -->
+      <text id="baby" x="200" y="358" text-anchor="middle" font-size="0" style="transition: font-size 0.5s cubic-bezier(0.34, 1.8, 0.64, 1);">🐤</text>
+    </svg>
+  </div>
+
+  <div class="tap-area">
+    <div class="tap-helper" id="tap-helper">한 줄 외우고 톡톡!</div>
+    <button class="tap-btn color-1" id="tap-btn">
+      <span class="tap-num" id="tap-num">1</span>
+      <span class="tap-label">번째</span>
+    </button>
+    <button class="stop-link" id="stop-link">취소</button>
+  </div>
+</div>
+
+<!-- RESULT -->
+<div class="screen" id="screen-result" hidden>
+  <div class="result-emoji" id="result-emoji">🐣</div>
+  <div class="result-message" id="result-message"></div>
+  <div class="result-actions">
+    <button class="start-btn" id="retry-btn">한 번 더! 🎯</button>
+    <button class="secondary-btn" id="back-btn">시간 다시 정하기</button>
+  </div>
+</div>
+
+<script>
+const state = {
+  duration: 30,
+  startTime: 0,
+  rafId: null,
+  locked: false,
+  soundOn: true,
+  audioCtx: null,
+  nextTickAt: 0,
+  count: 0,
+  totalTaps: 9,
+  babyEmoji: '🐤',
+};
+
+const babyPool = ['🐤', '🐧', '🦖', '🦄', '🐰', '🦉', '🐲', '🦋', '🐱', '🐶', '🐢', '🦊'];
+
+// AUDIO
+function getCtx() {
+  if (!state.audioCtx) {
+    try { state.audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+    catch(e) { return null; }
+  }
+  return state.audioCtx;
+}
+function playTick(highPitch=false) {
+  if (!state.soundOn) return;
+  const ctx = getCtx(); if (!ctx) return;
+  const t = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = 'sine';
+  osc.frequency.value = highPitch ? 1100 : 700;
+  gain.gain.setValueAtTime(0.05, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+  osc.connect(gain).connect(ctx.destination);
+  osc.start(t); osc.stop(t + 0.05);
+}
+function playTap(step) {
+  if (!state.soundOn) return;
+  const ctx = getCtx(); if (!ctx) return;
+  const t = ctx.currentTime;
+  const base = 380 + step * 45;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = 'triangle';
+  osc.frequency.setValueAtTime(base * 2, t);
+  osc.frequency.exponentialRampToValueAtTime(base, t + 0.09);
+  gain.gain.setValueAtTime(0, t);
+  gain.gain.linearRampToValueAtTime(0.2, t + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.13);
+  osc.connect(gain).connect(ctx.destination);
+  osc.start(t); osc.stop(t + 0.13);
+}
+function playSuccess() {
+  if (!state.soundOn) return;
+  const ctx = getCtx(); if (!ctx) return;
+  const t = ctx.currentTime;
+  [523, 659, 784, 1047, 1319].forEach((f, i) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.value = f;
+    gain.gain.setValueAtTime(0, t + i*0.08);
+    gain.gain.linearRampToValueAtTime(0.2, t + i*0.08 + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + i*0.08 + 0.3);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(t + i*0.08); osc.stop(t + i*0.08 + 0.35);
+  });
+}
+function playSleep() {
+  if (!state.soundOn) return;
+  const ctx = getCtx(); if (!ctx) return;
+  const t = ctx.currentTime;
+  [440, 370, 311, 262].forEach((f, i) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = f;
+    gain.gain.setValueAtTime(0, t + i*0.18);
+    gain.gain.linearRampToValueAtTime(0.12, t + i*0.18 + 0.06);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + i*0.18 + 0.4);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(t + i*0.18); osc.stop(t + i*0.18 + 0.45);
+  });
+}
+
+// START
+document.querySelectorAll('.time-btn').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('.time-btn').forEach(x => x.classList.remove('selected'));
+    b.classList.add('selected');
+    state.duration = parseInt(b.dataset.time);
+  });
+});
+
+document.getElementById('sound-toggle').addEventListener('click', (e) => {
+  state.soundOn = !state.soundOn;
+  e.currentTarget.textContent = state.soundOn ? '🔊' : '🔇';
+  if (state.soundOn) getCtx();
+});
+
+document.getElementById('start-btn').addEventListener('click', () => {
+  getCtx();
+  startGame();
+});
+
+// PROGRESS
+function buildStars() {
+  const c = document.getElementById('progress-stars');
+  c.innerHTML = '';
+  for (let i = 1; i <= state.totalTaps; i++) {
+    const s = document.createElement('div');
+    s.className = 'progress-star';
+    s.dataset.idx = i;
+    s.textContent = '★';
+    c.appendChild(s);
+  }
+}
+function fillStar(n) {
+  const star = document.querySelector(`.progress-star[data-idx="${n}"]`);
+  if (star) star.classList.add('filled');
+}
+
+// COLOR INTERPOLATION
+function hexToRgb(hex) {
+  return [parseInt(hex.slice(1,3), 16), parseInt(hex.slice(3,5), 16), parseInt(hex.slice(5,7), 16)];
+}
+function lerpColor(c1, c2, t) {
+  const a = hexToRgb(c1), b = hexToRgb(c2);
+  return `rgb(${Math.round(a[0]+(b[0]-a[0])*t)},${Math.round(a[1]+(b[1]-a[1])*t)},${Math.round(a[2]+(b[2]-a[2])*t)})`;
+}
+
+const skyStops = [
+  { t: 0.00, top: '#B8E0FF', mid: '#FFE5B4' },
+  { t: 0.35, top: '#7EC4F0', mid: '#FFD9A8' },
+  { t: 0.60, top: '#FFB347', mid: '#FF9A8B' },
+  { t: 0.80, top: '#9B6B9E', mid: '#5D4E8C' },
+  { t: 1.00, top: '#1A1A3E', mid: '#2D2456' }
+];
+
+function getSkyColors(progress) {
+  for (let i = 0; i < skyStops.length - 1; i++) {
+    if (progress <= skyStops[i+1].t) {
+      const t = (progress - skyStops[i].t) / (skyStops[i+1].t - skyStops[i].t);
+      return {
+        top: lerpColor(skyStops[i].top, skyStops[i+1].top, t),
+        mid: lerpColor(skyStops[i].mid, skyStops[i+1].mid, t)
+      };
+    }
+  }
+  return { top: skyStops[skyStops.length-1].top, mid: skyStops[skyStops.length-1].mid };
+}
+
+const sun = document.getElementById('sun');
+const sunBody = document.getElementById('sun-body');
+const moon = document.getElementById('moon');
+const skyTopStop = document.getElementById('sky-top-stop');
+const skyMidStop = document.getElementById('sky-mid-stop');
+const stars = document.querySelectorAll('.star');
+const clouds = document.querySelectorAll('.cloud');
+
+function updateSky(progress) {
+  const colors = getSkyColors(progress);
+  skyTopStop.setAttribute('stop-color', colors.top);
+  skyMidStop.setAttribute('stop-color', colors.mid);
+
+  const sunX = 40 + progress * 320;
+  const sunY = 170 - 130 * Math.sin(progress * Math.PI);
+  sun.setAttribute('transform', `translate(${sunX}, ${sunY})`);
+
+  let sunColor;
+  if (progress < 0.4) sunColor = lerpColor('#FFD700', '#FFA500', progress / 0.4);
+  else if (progress < 0.65) sunColor = lerpColor('#FFA500', '#FF6B47', (progress - 0.4) / 0.25);
+  else sunColor = lerpColor('#FF6B47', '#C44569', Math.min(1, (progress - 0.65) / 0.2));
+  sunBody.setAttribute('fill', sunColor);
+
+  const sunOpacity = progress < 0.82 ? 1 : Math.max(0, 1 - (progress - 0.82) / 0.15);
+  sun.setAttribute('opacity', sunOpacity);
+
+  const moonProgress = Math.max(0, (progress - 0.65) / 0.35);
+  if (moonProgress > 0) {
+    moon.setAttribute('opacity', moonProgress);
+    const moonX = 360 - moonProgress * 180;
+    const moonY = 170 - 100 * Math.sin(moonProgress * 0.6 * Math.PI);
+    moon.setAttribute('transform', `translate(${moonX}, ${moonY})`);
+  } else {
+    moon.setAttribute('opacity', 0);
+  }
+
+  const starOpacity = Math.max(0, (progress - 0.7) / 0.3);
+  stars.forEach((s, i) => {
+    const twinkle = 0.7 + 0.3 * Math.sin(progress * 30 + i);
+    s.setAttribute('opacity', starOpacity * twinkle);
+  });
+
+  // Clouds fade as it gets dark
+  const cloudOpacity = progress < 0.6 ? 1 : Math.max(0, 1 - (progress - 0.6) / 0.3);
+  clouds.forEach(c => c.style.opacity = cloudOpacity * parseFloat(c.getAttribute('opacity') || 1));
+}
+
+// GAME
+function startGame() {
+  state.locked = false;
+  state.count = 0;
+  state.babyEmoji = babyPool[Math.floor(Math.random() * babyPool.length)];
+  state.startTime = performance.now();
+  state.nextTickAt = 0;
+  document.getElementById('screen-start').hidden = true;
+  document.getElementById('screen-result').hidden = true;
+  document.getElementById('screen-game').hidden = false;
+  document.getElementById('timer-pill').classList.remove('urgent');
+  document.getElementById('countdown').textContent = state.duration;
+  document.getElementById('tap-helper').textContent = '한 줄 외우고 톡톡!';
+  document.querySelectorAll('.crack').forEach(c => c.classList.remove('visible'));
+  document.getElementById('egg-whole').classList.remove('hatched');
+  document.getElementById('egg-left-half').classList.remove('split');
+  document.getElementById('egg-right-half').classList.remove('split');
+  document.getElementById('egg-wrap').classList.remove('sleeping', 'wobble');
+  document.querySelectorAll('.zzz').forEach(z => z.classList.remove('show'));
+  document.getElementById('baby').style.fontSize = '0px';
+  clouds.forEach(c => c.style.opacity = '');
+  buildStars();
+  updateSky(0);
+  updateTapButton();
+  state.rafId = requestAnimationFrame(tick);
+}
+
+function updateTapButton() {
+  const btn = document.getElementById('tap-btn');
+  const num = document.getElementById('tap-num');
+  const label = btn.querySelector('.tap-label');
+  const next = state.count + 1;
+  if (state.count >= state.totalTaps) return;
+  num.textContent = next;
+  btn.className = 'tap-btn';
+  if (next <= 2) btn.classList.add('color-1');
+  else if (next <= 4) btn.classList.add('color-2');
+  else if (next <= 6) btn.classList.add('color-3');
+  else if (next <= 8) btn.classList.add('color-4');
+  else if (next === 9) btn.classList.add('color-final');
+  label.textContent = (next === 9) ? '마지막!' : '번째';
+}
+
+function tick(now) {
+  if (state.locked) return;
+  const elapsed = (now - state.startTime) / 1000;
+  const remaining = state.duration - elapsed;
+  const progress = Math.min(1, elapsed / state.duration);
+
+  updateSky(progress);
+  document.getElementById('countdown').textContent = Math.max(0, Math.ceil(remaining));
+
+  const tickInterval = remaining > state.duration * 0.5 ? 1.2
+                     : remaining > state.duration * 0.25 ? 0.7
+                     : remaining > 0 ? 0.35 : 9999;
+  if (elapsed >= state.nextTickAt) {
+    playTick(remaining < state.duration * 0.3);
+    state.nextTickAt = elapsed + tickInterval;
+  }
+
+  if (remaining < state.duration * 0.3) {
+    document.getElementById('timer-pill').classList.add('urgent');
+  }
+
+  if (remaining <= 0) {
+    sleep();
+    return;
+  }
+  state.rafId = requestAnimationFrame(tick);
+}
+
+// Tap
+document.getElementById('tap-btn').addEventListener('click', (e) => {
+  if (state.locked) return;
+  state.count++;
+  playTap(state.count);
+  fillStar(state.count);
+  const crack = document.querySelector(`.crack[data-idx="${state.count}"]`);
+  if (crack) crack.classList.add('visible');
+  const egg = document.getElementById('egg-wrap');
+  egg.classList.remove('wobble');
+  void egg.offsetWidth;
+  egg.classList.add('wobble');
+  spawnTapParticles(e.currentTarget);
+  const btn = e.currentTarget;
+  btn.classList.remove('pop');
+  void btn.offsetWidth;
+  btn.classList.add('pop');
+
+  const helper = document.getElementById('tap-helper');
+  if (state.count < state.totalTaps) {
+    helper.textContent = state.count % 2 === 0 ? '아빠/엄마 차례!' : '내 차례!';
+  }
+
+  if (state.count >= state.totalTaps) {
+    hatch();
+  } else {
+    updateTapButton();
+  }
+});
+
+document.getElementById('stop-link').addEventListener('click', () => {
+  state.locked = true;
+  if (state.rafId) cancelAnimationFrame(state.rafId);
+  document.getElementById('screen-game').hidden = true;
+  document.getElementById('screen-start').hidden = false;
+});
+
+function spawnTapParticles(btn) {
+  const rect = btn.getBoundingClientRect();
+  const cx = rect.left + rect.width/2;
+  const cy = rect.top + rect.height/2;
+  const emojis = ['⭐', '✨', '💫', '🌟', '💖', '🌸'];
+  for (let i = 0; i < 8; i++) {
+    const p = document.createElement('div');
+    p.className = 'tap-particle';
+    p.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+    p.style.left = cx + 'px';
+    p.style.top = cy + 'px';
+    const angle = (Math.PI * 2 * i) / 8 + Math.random()*0.5 - Math.PI/2;
+    const dist = 70 + Math.random()*50;
+    p.style.setProperty('--tx', `${Math.cos(angle)*dist}px`);
+    p.style.setProperty('--ty', `${Math.sin(angle)*dist}px`);
+    p.style.setProperty('--rot', (Math.random()*360 - 180) + 'deg');
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 1050);
+  }
+}
+
+function hatch() {
+  state.locked = true;
+  if (state.rafId) cancelAnimationFrame(state.rafId);
+  const elapsed = (performance.now() - state.startTime) / 1000;
+  playSuccess();
+  setTimeout(() => {
+    document.getElementById('egg-whole').classList.add('hatched');
+    document.getElementById('egg-left-half').classList.add('split');
+    document.getElementById('egg-right-half').classList.add('split');
+    const baby = document.getElementById('baby');
+    baby.textContent = state.babyEmoji;
+    baby.style.fontSize = '78px';
+  }, 100);
+  spawnConfetti();
+  setTimeout(() => { showResult('success', elapsed); }, 2000);
+}
+
+function sleep() {
+  state.locked = true;
+  playSleep();
+  document.getElementById('egg-wrap').classList.add('sleeping');
+  setTimeout(() => document.getElementById('zzz1').classList.add('show'), 300);
+  setTimeout(() => document.getElementById('zzz2').classList.add('show'), 800);
+  setTimeout(() => document.getElementById('zzz3').classList.add('show'), 1300);
+  setTimeout(() => { showResult('sleep', 0); }, 2200);
+}
+
+function spawnConfetti() {
+  const colors = ['#ff7eb1', '#ffd966', '#7eebc4', '#7ecbff', '#ffb085', '#c4a8e8'];
+  for (let i = 0; i < 80; i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti-piece';
+    c.style.left = Math.random()*100 + 'vw';
+    c.style.background = colors[Math.floor(Math.random()*colors.length)];
+    c.style.animationDuration = (1.6 + Math.random()*1.8) + 's';
+    c.style.animationDelay = (Math.random()*0.6) + 's';
+    c.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), 4000);
+  }
+}
+
+function showResult(kind, elapsed) {
+  document.getElementById('screen-game').hidden = true;
+  document.getElementById('screen-result').hidden = false;
+  const emoji = document.getElementById('result-emoji');
+  const msg = document.getElementById('result-message');
+  if (kind === 'success') {
+    const sec = elapsed.toFixed(1);
+    emoji.textContent = state.babyEmoji;
+    msg.className = 'result-message';
+    msg.innerHTML = `<span class="accent">${sec}초</span> 만에<br>아기가 태어났어!`;
+  } else {
+    emoji.textContent = '😴';
+    msg.className = 'result-message sleep';
+    msg.innerHTML = `밤이 됐어... 알이 잠들었네.<br>내일 다시 깨워줘!`;
+  }
+}
+
+document.getElementById('retry-btn').addEventListener('click', () => {
+  document.getElementById('screen-result').hidden = true;
+  startGame();
+});
+document.getElementById('back-btn').addEventListener('click', () => {
+  document.getElementById('screen-result').hidden = true;
+  document.getElementById('screen-start').hidden = false;
+});
+</script>
+</body>
+</html>

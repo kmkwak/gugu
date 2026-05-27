@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>구구단 외우기</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+  html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; }
+  body {
+    background: radial-gradient(ellipse at top, #1e3a8a 0%, #0f172a 60%, #020617 100%);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff;
+    position: relative;
+  }
+  /* 별 배경 */
+  body::before, body::after {
+    content: ''; position: fixed; inset: 0; pointer-events: none;
+    background-image:
+      radial-gradient(1.5px 1.5px at 20% 30%, #fff, transparent),
+      radial-gradient(1px 1px at 60% 70%, #fff, transparent),
+      radial-gradient(1.5px 1.5px at 80% 20%, #fde68a, transparent),
+      radial-gradient(1px 1px at 35% 85%, #fff, transparent),
+      radial-gradient(1px 1px at 90% 50%, #93c5fd, transparent),
+      radial-gradient(1.5px 1.5px at 15% 60%, #fff, transparent),
+      radial-gradient(1px 1px at 50% 15%, #fff, transparent),
+      radial-gradient(1px 1px at 75% 90%, #fbbf24, transparent);
+    background-size: 100% 100%;
+    opacity: 0.7;
+  }
+  body::after {
+    animation: twinkle 3s ease-in-out infinite alternate;
+    background-image:
+      radial-gradient(1px 1px at 25% 50%, #fff, transparent),
+      radial-gradient(1.5px 1.5px at 70% 35%, #fff, transparent),
+      radial-gradient(1px 1px at 45% 75%, #c4b5fd, transparent),
+      radial-gradient(1px 1px at 88% 80%, #fff, transparent);
+  }
+  @keyframes twinkle { 0% { opacity: 0.3; } 100% { opacity: 0.9; } }
+
+  .app { width: 100%; max-width: 460px; height: 100vh; max-height: 900px; padding: 16px; display: flex; flex-direction: column; position: relative; z-index: 1; }
+
+  /* 상단 정보 */
+  .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; gap: 8px; }
+  .badge {
+    background: rgba(255,255,255,0.12); padding: 8px 14px; border-radius: 999px;
+    font-size: 13px; font-weight: 600; backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.15);
+  }
+  .badge.time { background: rgba(251, 191, 36, 0.18); border-color: rgba(251, 191, 36, 0.3); }
+  .home-btn {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.15);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 20px; color: #fff;
+    transition: transform 0.08s, background 0.2s;
+    font-family: inherit;
+  }
+  .home-btn:active { transform: scale(0.92); background: rgba(255,255,255,0.2); }
+
+  /* 단 선택 */
+  .start-screen { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: 20px; }
+  .title {
+    font-size: 38px; font-weight: 800;
+    background: linear-gradient(135deg, #fbbf24, #f472b6, #60a5fa);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    text-shadow: 0 0 30px rgba(251, 191, 36, 0.3);
+    letter-spacing: -1px;
+  }
+  .subtitle { font-size: 15px; opacity: 0.8; margin-bottom: 8px; }
+  .dan-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%; max-width: 340px; }
+  .dan-btn {
+    aspect-ratio: 1;
+    background: linear-gradient(145deg, rgba(255,255,255,0.95), rgba(243, 232, 255, 0.9));
+    color: #4c1d95;
+    border: none; border-radius: 20px; font-size: 32px; font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 4px 0 rgba(76, 29, 149, 0.4), 0 8px 20px rgba(0,0,0,0.2);
+    transition: transform 0.08s, box-shadow 0.08s;
+    font-family: inherit;
+    position: relative; overflow: hidden;
+  }
+  .dan-btn::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.6), transparent 50%);
+    pointer-events: none;
+  }
+  .dan-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(76, 29, 149, 0.4), 0 2px 8px rgba(0,0,0,0.2); }
+  .dan-btn.all {
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    color: #78350f; grid-column: span 3; aspect-ratio: 5/1; font-size: 20px;
+    box-shadow: 0 4px 0 rgba(120, 53, 15, 0.4), 0 8px 20px rgba(251, 191, 36, 0.3);
+  }
+  .dan-btn.random {
+    background: linear-gradient(135deg, #a78bfa, #7c3aed);
+    color: #fff;
+    box-shadow: 0 4px 0 rgba(76, 29, 149, 0.5), 0 8px 20px rgba(124, 58, 237, 0.3);
+  }
+
+  /* 게임 화면 */
+  .game-screen { flex: 1; display: none; flex-direction: column; min-height: 0; }
+  .game-screen.active { display: flex; }
+
+  /* 메인 영역: 카드 + 우측 게이지 */
+  .play-area { display: flex; gap: 12px; flex: 1; min-height: 0; margin-bottom: 14px; }
+
+  /* 세로형 카드 */
+  .problem-card {
+    flex: 1; background: linear-gradient(160deg, #ffffff 0%, #f5f3ff 100%);
+    color: #1f2937; border-radius: 28px;
+    padding: 20px 16px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.9);
+    display: flex; flex-direction: column;
+    position: relative; overflow: hidden;
+  }
+  .problem-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 100px;
+    background: radial-gradient(ellipse at center top, rgba(251, 191, 36, 0.15), transparent 70%);
+    pointer-events: none;
+  }
+  .problem-area {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    position: relative; z-index: 1;
+    min-height: 100px;
+  }
+  .problem-wrap {
+    position: relative;
+    display: inline-block;
+  }
+  .problem {
+    font-size: 52px; font-weight: 800; letter-spacing: 1px;
+    transition: transform 0.2s;
+    text-align: center;
+    background: linear-gradient(135deg, #1f2937, #4c1d95);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    position: relative;
+    padding: 10px 20px;
+  }
+  .problem.pop { animation: pop 0.4s; }
+  @keyframes pop { 0% { transform: scale(1); } 40% { transform: scale(1.2); } 100% { transform: scale(1); } }
+  .problem.shake { animation: shake 0.4s; }
+  @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-12px); } 75% { transform: translateX(12px); } }
+
+  /* 빨간 색연필 동그라미 */
+  .circle-svg {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 160%; height: 270%;
+    pointer-events: none;
+    overflow: visible;
+    opacity: 0;
+  }
+  .circle-svg.show { opacity: 1; }
+  .circle-svg path {
+    fill: none;
+    stroke: #d63027;
+    stroke-width: 6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    filter: url(#pencil-texture);
+    opacity: 0.9;
+  }
+  .circle-svg.show path {
+    stroke-dasharray: 900;
+    stroke-dashoffset: 900;
+    animation: drawCircle 0.65s ease-out forwards;
+  }
+  @keyframes drawCircle {
+    to { stroke-dashoffset: 0; }
+  }
+
+  /* 답 누적 (시처럼) */
+  .recited {
+    font-size: 12px; color: #9ca3af; line-height: 1.8;
+    text-align: center; min-height: 40px;
+    padding-top: 10px; border-top: 1px dashed #e5e7eb;
+    position: relative; z-index: 1;
+    max-height: 70px; overflow: hidden;
+  }
+  .recited span { display: inline-block; margin: 0 5px; }
+  .recited span:last-child { color: #7c3aed; font-weight: 700; }
+
+  /* 우측 세로 타임 게이지 */
+  .gauge {
+    width: 32px; background: rgba(255,255,255,0.08);
+    border-radius: 999px; padding: 4px;
+    border: 1px solid rgba(255,255,255,0.12);
+    backdrop-filter: blur(10px);
+    position: relative; overflow: hidden;
+    display: flex; flex-direction: column-reverse;
+  }
+  .gauge-fill {
+    width: 100%; border-radius: 999px;
+    background: linear-gradient(180deg, #ef4444 0%, #f59e0b 30%, #fbbf24 60%, #4ade80 100%);
+    box-shadow: 0 0 16px rgba(74, 222, 128, 0.5), inset 0 1px 0 rgba(255,255,255,0.4);
+    transition: height 0.3s ease-out, box-shadow 0.3s;
+    position: relative;
+    min-height: 0;
+  }
+  .gauge-fill::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 8px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.6), transparent);
+    border-radius: 999px 999px 0 0;
+  }
+  .gauge-fill.warn {
+    background: linear-gradient(180deg, #dc2626, #ef4444);
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.8), inset 0 1px 0 rgba(255,255,255,0.4);
+    animation: gaugeShake 0.3s infinite;
+  }
+  @keyframes gaugeShake {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(1px); }
+  }
+  .gauge-bonus {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    font-size: 14px; font-weight: 800; color: #4ade80;
+    text-shadow: 0 0 8px rgba(74, 222, 128, 0.8);
+    pointer-events: none; opacity: 0;
+    white-space: nowrap;
+  }
+  .gauge-bonus.show { animation: bonusFloat 0.8s ease-out; }
+  @keyframes bonusFloat {
+    0% { opacity: 0; transform: translate(-50%, 0); }
+    20% { opacity: 1; }
+    100% { opacity: 0; transform: translate(-50%, -40px); }
+  }
+
+  /* 선택지 - 가로 일렬 동그라미 4개 */
+  .choices { display: flex; gap: 10px; justify-content: space-between; flex: 0 0 auto; }
+  .choice-btn {
+    flex: 1; aspect-ratio: 1;
+    background: linear-gradient(145deg, #ffffff, #ede9fe);
+    color: #4c1d95; border: none;
+    border-radius: 50%;
+    font-size: 28px; font-weight: 800; cursor: pointer;
+    box-shadow: 0 5px 0 rgba(76, 29, 149, 0.4), 0 6px 16px rgba(0,0,0,0.2);
+    transition: transform 0.08s, box-shadow 0.08s, background 0.2s;
+    font-family: inherit; position: relative; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .choice-btn::before {
+    content: ''; position: absolute; top: 8%; left: 15%; width: 35%; height: 30%;
+    background: radial-gradient(ellipse, rgba(255,255,255,0.7), transparent 70%);
+    pointer-events: none; border-radius: 50%;
+  }
+  .choice-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 rgba(76, 29, 149, 0.4), 0 2px 8px rgba(0,0,0,0.2); }
+  .choice-btn.correct {
+    background: linear-gradient(145deg, #4ade80, #16a34a);
+    color: #fff;
+    box-shadow: 0 5px 0 rgba(20, 83, 45, 0.5), 0 0 30px rgba(74, 222, 128, 0.7);
+    animation: correctFlash 0.5s;
+  }
+  .choice-btn.wrong {
+    background: linear-gradient(145deg, #f87171, #dc2626);
+    color: #fff;
+    animation: wrongFlash 0.5s;
+  }
+  @keyframes correctFlash { 0% { transform: scale(1); } 50% { transform: scale(1.15); } 100% { transform: scale(1); } }
+  @keyframes wrongFlash { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+
+  /* 화면 플래시 */
+  .flash {
+    position: absolute; inset: 0; pointer-events: none;
+    background: #4ade80; opacity: 0; border-radius: 28px;
+    z-index: 2;
+  }
+  .flash.show { animation: flashAnim 0.3s; }
+  @keyframes flashAnim { 0% { opacity: 0; } 30% { opacity: 0.4; } 100% { opacity: 0; } }
+
+  /* 파티클 캔버스 */
+  canvas.particles {
+    position: fixed; inset: 0; pointer-events: none; z-index: 100;
+  }
+
+  /* 단 완성 화면 */
+  .complete-screen {
+    position: absolute; inset: 0; display: none;
+    flex-direction: column; align-items: center; justify-content: center;
+    background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(12px);
+    border-radius: 16px; z-index: 50; padding: 20px;
+  }
+  .complete-screen.active { display: flex; animation: zoomIn 0.5s; }
+  @keyframes zoomIn { 0% { transform: scale(0.3); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+  .trophy { font-size: 80px; margin-bottom: 12px; animation: bounce 1s infinite; filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.6)); }
+  @keyframes bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+  .complete-title {
+    font-size: 38px; font-weight: 800; margin-bottom: 6px;
+    background: linear-gradient(135deg, #fbbf24, #f472b6);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .complete-stats { font-size: 15px; opacity: 0.9; margin-bottom: 20px; text-align: center; line-height: 1.6; }
+  .complete-recited {
+    background: rgba(255,255,255,0.95); color: #1f2937;
+    padding: 14px 18px; border-radius: 16px; margin-bottom: 20px;
+    font-size: 14px; line-height: 1.9; max-width: 280px;
+  }
+  .complete-btns { display: flex; gap: 10px; }
+  .complete-btn {
+    padding: 13px 22px; border: none; border-radius: 14px;
+    font-size: 15px; font-weight: 700; cursor: pointer;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.25); font-family: inherit;
+  }
+  .complete-btn.primary { background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #78350f; }
+  .complete-btn.secondary { background: rgba(255,255,255,0.9); color: #4c1d95; }
+  .complete-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0,0,0,0.25); }
+
+  /* 콤보 표시 */
+  .combo-display {
+    position: absolute; top: 70px; left: 50%; transform: translateX(-50%);
+    font-size: 28px; font-weight: 800; color: #fbbf24;
+    text-shadow: 0 0 20px rgba(251, 191, 36, 0.8), 0 2px 8px rgba(0,0,0,0.4);
+    pointer-events: none; opacity: 0; z-index: 10;
+  }
+  .combo-display.show { animation: comboPop 0.8s; }
+  @keyframes comboPop {
+    0% { transform: translateX(-50%) scale(0.5); opacity: 0; }
+    30% { transform: translateX(-50%) scale(1.3); opacity: 1; }
+    100% { transform: translateX(-50%) scale(1); opacity: 0; }
+  }
+
+  /* 게임 오버 화면 */
+  .gameover-screen {
+    position: absolute; inset: 0; display: none;
+    flex-direction: column; align-items: center; justify-content: center;
+    background: rgba(127, 29, 29, 0.85); backdrop-filter: blur(12px);
+    border-radius: 16px; z-index: 50; padding: 20px;
+  }
+  .gameover-screen.active { display: flex; animation: zoomIn 0.4s; }
+  .gameover-icon { font-size: 72px; margin-bottom: 8px; animation: explode 0.6s ease-out; }
+  @keyframes explode {
+    0% { transform: scale(0); opacity: 0; }
+    50% { transform: scale(1.4); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .gameover-title {
+    font-size: 36px; font-weight: 800; margin-bottom: 6px; color: #fff;
+    text-shadow: 0 0 20px rgba(239, 68, 68, 0.8);
+  }
+  .gameover-stats { font-size: 15px; opacity: 0.95; margin-bottom: 20px; text-align: center; line-height: 1.6; }
+  .gameover-btns { display: flex; gap: 10px; }
+</style>
+</head>
+<body>
+
+<canvas class="particles" id="particles"></canvas>
+
+<div class="app">
+  <!-- 시작 화면 -->
+  <div class="start-screen" id="start-screen">
+    <div class="title">✨ 구구단 마스터</div>
+    <div class="subtitle">연습할 단을 골라봐!</div>
+    <div class="dan-grid">
+      <button class="dan-btn" data-dan="2">2단</button>
+      <button class="dan-btn" data-dan="3">3단</button>
+      <button class="dan-btn" data-dan="4">4단</button>
+      <button class="dan-btn" data-dan="5">5단</button>
+      <button class="dan-btn" data-dan="6">6단</button>
+      <button class="dan-btn" data-dan="7">7단</button>
+      <button class="dan-btn" data-dan="8">8단</button>
+      <button class="dan-btn" data-dan="9">9단</button>
+      <button class="dan-btn random" data-dan="0">🎲 랜덤</button>
+      <button class="dan-btn all" data-dan="-1">⚡ 전체 도전!</button>
+    </div>
+  </div>
+
+  <!-- 게임 화면 -->
+  <div class="game-screen" id="game-screen">
+    <div class="top">
+      <button class="home-btn" id="home-btn" aria-label="홈으로">🏠</button>
+      <div class="badge" id="dan-label">2단</div>
+      <div class="badge time" id="score-badge">⭐ 0개</div>
+    </div>
+
+    <div class="play-area">
+      <!-- 세로형 문제 카드 -->
+      <div class="problem-card">
+        <div class="flash" id="flash"></div>
+        <div class="problem-area">
+          <div class="problem-wrap">
+            <div class="problem" id="problem">2 × 1 = ?</div>
+            <svg class="circle-svg" id="circle-svg" viewBox="0 0 200 200" preserveAspectRatio="none">
+              <defs>
+                <filter id="pencil-texture" x="-15%" y="-15%" width="130%" height="130%">
+                  <!-- 1차: 외곽선을 거칠게 일그러뜨리기 (큰 진폭) -->
+                  <feTurbulence type="fractalNoise" baseFrequency="0.6" numOctaves="3" seed="3" result="noise1"/>
+                  <feDisplacementMap in="SourceGraphic" in2="noise1" scale="5" xChannelSelector="R" yChannelSelector="G" result="rough1"/>
+                  <!-- 2차: 미세한 결도 추가 (작은 알갱이) -->
+                  <feTurbulence type="fractalNoise" baseFrequency="2.5" numOctaves="2" seed="7" result="noise2"/>
+                  <feDisplacementMap in="rough1" in2="noise2" scale="1.5" xChannelSelector="R" yChannelSelector="G" result="rough2"/>
+                  <!-- 농도 마스크: 군데군데 진하고 흐리게 -->
+                  <feTurbulence type="fractalNoise" baseFrequency="1.8" numOctaves="3" seed="11" result="noise3"/>
+                  <feColorMatrix in="noise3" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 2.2 -0.7" result="mask"/>
+                  <feComposite in="rough2" in2="mask" operator="in" result="textured"/>
+                  <!-- 거친 베이스 + 농도 변화 합치기 -->
+                  <feMerge>
+                    <feMergeNode in="rough2"/>
+                    <feMergeNode in="textured"/>
+                    <feMergeNode in="textured"/>
+                  </feMerge>
+                </filter>
+              </defs>
+              <!-- 5시 시작 → 시계방향 한 바퀴 → 5시 도착
+                   동그란 원에 가까운 비율 (가로 ~120, 세로 ~150)
+                   5시 도착 접선이 7시 방향이 되도록, 꼬리는 그 접선 그대로 좌하단으로
+                   viewBox 200x200, 중심 ~(100, 95) -->
+              <path d="M 145 145 C 115 165, 65 162, 40 130 C 18 100, 28 50, 68 25 C 110 5, 158 25, 165 70 C 170 110, 158 138, 150 142 L 120 175" />
+            </svg>
+          </div>
+        </div>
+        <div class="recited" id="recited"></div>
+      </div>
+
+      <!-- 우측 세로 타임 게이지 -->
+      <div class="gauge">
+        <div class="gauge-fill" id="gauge-fill" style="height: 100%;"></div>
+        <div class="gauge-bonus" id="gauge-bonus">+2초</div>
+      </div>
+    </div>
+
+    <div class="combo-display" id="combo-display"></div>
+
+    <div class="choices" id="choices"></div>
+
+    <!-- 단 완성 화면 -->
+    <div class="complete-screen" id="complete-screen">
+      <div class="trophy">🏆</div>
+      <div class="complete-title" id="complete-title">2단 완성!</div>
+      <div class="complete-stats" id="complete-stats">15.3초 · 최고 콤보 9</div>
+      <div class="complete-recited" id="complete-recited"></div>
+      <div class="complete-btns">
+        <button class="complete-btn secondary" id="back-btn">단 선택</button>
+        <button class="complete-btn primary" id="next-btn">다시!</button>
+      </div>
+    </div>
+
+    <!-- 게임 오버 화면 -->
+    <div class="gameover-screen" id="gameover-screen">
+      <div class="gameover-icon">💥</div>
+      <div class="gameover-title">시간 초과!</div>
+      <div class="gameover-stats" id="gameover-stats">×3 까지 풀었어요</div>
+      <div class="gameover-btns">
+        <button class="complete-btn secondary" id="gameover-back">단 선택</button>
+        <button class="complete-btn primary" id="gameover-retry">다시!</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ========== 효과음 (Web Audio API) ==========
+let audioCtx;
+function initAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+}
+function playTone(freq, duration, type = 'sine', volume = 0.2) {
+  if (!audioCtx) return;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = type;
+  osc.frequency.value = freq;
+  gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + duration);
+}
+function playCorrect() {
+  playTone(800, 0.1, 'sine', 0.2);
+  setTimeout(() => playTone(1200, 0.15, 'sine', 0.2), 80);
+}
+function playWrong() {
+  playTone(200, 0.2, 'square', 0.15);
+}
+function playComplete() {
+  const notes = [523, 659, 784, 1047]; // C, E, G, C
+  notes.forEach((freq, i) => {
+    setTimeout(() => playTone(freq, 0.2, 'triangle', 0.25), i * 100);
+  });
+}
+function playTap() {
+  playTone(600, 0.05, 'sine', 0.1);
+}
+
+// ========== 파티클 ==========
+const canvas = document.getElementById('particles');
+const ctx = canvas.getContext('2d');
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+const particles = [];
+function spawnParticles(x, y, color, count = 25) {
+  for (let i = 0; i < count; i++) {
+    const angle = (Math.PI * 2 * i) / count + Math.random() * 0.5;
+    const speed = 4 + Math.random() * 6;
+    particles.push({
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 2,
+      life: 1,
+      color,
+      size: 4 + Math.random() * 4,
+      gravity: 0.2,
+    });
+  }
+}
+function animateParticles() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += p.gravity;
+    p.life -= 0.02;
+    if (p.life <= 0) { particles.splice(i, 1); continue; }
+    ctx.globalAlpha = p.life;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  requestAnimationFrame(animateParticles);
+}
+animateParticles();
+
+// ========== 게임 상태 ==========
+const TIME_MAX = 10; // 게이지 최대 시간 (초)
+const TIME_BONUS = 1.5; // 정답 시 회복 시간
+const state = {
+  dan: 2,
+  mode: 'single', // 'single' | 'random' | 'all'
+  step: 1,
+  startTime: 0,
+  timerInterval: null,
+  combo: 0,
+  maxCombo: 0,
+  recited: [],
+  allQueue: [],
+  locked: false,
+  timeLeft: TIME_MAX,
+  gameOver: false,
+};
+
+const $ = (id) => document.getElementById(id);
+
+// ========== 시작 화면 ==========
+document.querySelectorAll('.dan-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    initAudio();
+    playTap();
+    const v = parseInt(btn.dataset.dan, 10);
+    if (v === 0) {
+      // 랜덤: 2~9 중 하나
+      state.dan = 2 + Math.floor(Math.random() * 8);
+      state.mode = 'single';
+    } else if (v === -1) {
+      // 전체: 2~9 순차
+      state.allQueue = [2,3,4,5,6,7,8,9];
+      state.dan = state.allQueue.shift();
+      state.mode = 'all';
+    } else {
+      state.dan = v;
+      state.mode = 'single';
+    }
+    startGame();
+  });
+});
+
+// ========== 게임 시작 ==========
+function startGame() {
+  state.step = 1;
+  state.combo = 0;
+  state.maxCombo = 0;
+  state.recited = [];
+  state.startTime = performance.now();
+  state.locked = false;
+  state.timeLeft = TIME_MAX;
+  state.gameOver = false;
+
+  $('start-screen').style.display = 'none';
+  $('game-screen').classList.add('active');
+  $('complete-screen').classList.remove('active');
+  $('gameover-screen').classList.remove('active');
+  $('dan-label').textContent = `${state.dan}단`;
+  $('score-badge').textContent = '⭐ 0개';
+  $('recited').innerHTML = '';
+  $('gauge-fill').classList.remove('warn');
+  $('gauge-fill').style.height = '100%';
+
+  showProblem();
+  startTimer();
+}
+
+function startTimer() {
+  clearInterval(state.timerInterval);
+  let last = performance.now();
+  state.timerInterval = setInterval(() => {
+    if (state.gameOver || state.locked) { last = performance.now(); return; }
+    const now = performance.now();
+    const dt = (now - last) / 1000;
+    last = now;
+    state.timeLeft -= dt;
+    if (state.timeLeft <= 0) {
+      state.timeLeft = 0;
+      updateGauge();
+      gameOver();
+      return;
+    }
+    updateGauge();
+  }, 50);
+}
+
+function updateGauge() {
+  const pct = Math.max(0, Math.min(100, (state.timeLeft / TIME_MAX) * 100));
+  const fill = $('gauge-fill');
+  fill.style.height = pct + '%';
+  if (state.timeLeft < 3) fill.classList.add('warn');
+  else fill.classList.remove('warn');
+}
+
+function showBonus(text) {
+  const b = $('gauge-bonus');
+  b.textContent = text;
+  // 게이지 현재 높이 위치에 띄우기
+  const gaugeEl = document.querySelector('.gauge');
+  const fillH = $('gauge-fill').offsetHeight;
+  const gaugeH = gaugeEl.offsetHeight;
+  b.style.bottom = (fillH + 8) + 'px';
+  b.classList.remove('show');
+  void b.offsetWidth;
+  b.classList.add('show');
+}
+
+// ========== 문제 출제 ==========
+function showProblem() {
+  const a = state.dan, b = state.step;
+  const answer = a * b;
+  $('problem').textContent = `${a} × ${b} = ?`;
+  $('problem').className = 'problem';
+
+  // 선택지: 정답 + 비슷한 오답 3개
+  const choices = makeChoices(answer, a);
+  const choicesEl = $('choices');
+  choicesEl.innerHTML = '';
+  choices.forEach(val => {
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.textContent = val;
+    btn.dataset.val = val;
+    btn.addEventListener('click', (e) => handleChoice(btn, val, answer, e));
+    choicesEl.appendChild(btn);
+  });
+}
+
+function makeChoices(answer, dan) {
+  const candidates = new Set();
+
+  // 1순위: 같은 단의 인접 답 (가장 헷갈림) - dan×(b-1), dan×(b+1)
+  // answer = dan × b 이므로 b = answer / dan
+  const b = answer / dan;
+  if (b - 1 >= 1) candidates.add(dan * (b - 1));
+  if (b + 1 <= 9) candidates.add(dan * (b + 1));
+
+  // 2순위: 자리 바꾼 답 (두 자리 수만)
+  if (answer >= 10) {
+    const swapped = (answer % 10) * 10 + Math.floor(answer / 10);
+    if (swapped !== answer && swapped > 0) candidates.add(swapped);
+  }
+
+  // 3순위: ±1, ±2 (계산 실수)
+  const offsets = [1, -1, 2, -2];
+  for (const off of offsets) {
+    const v = answer + off;
+    if (v > 0 && v !== answer) candidates.add(v);
+  }
+
+  // 4순위: 같은 단의 다른 답들 (보충)
+  for (let i = 1; i <= 9; i++) {
+    const v = dan * i;
+    if (v !== answer) candidates.add(v);
+  }
+
+  // 정답 제외하고 후보 배열로
+  candidates.delete(answer);
+  const candArr = Array.from(candidates);
+
+  // 정답에 가까운 순으로 정렬해서 가까운 것 위주로 뽑기 위해
+  // 가까운 후보 6개 중에서 랜덤하게 3개 선택
+  candArr.sort((a, b) => Math.abs(a - answer) - Math.abs(b - answer));
+  const topPool = candArr.slice(0, Math.min(7, candArr.length));
+
+  // 셔플해서 3개 뽑기
+  topPool.sort(() => Math.random() - 0.5);
+  const wrongs = topPool.slice(0, 3);
+
+  // 정답 합치고 섞기
+  return [answer, ...wrongs].sort(() => Math.random() - 0.5);
+}
+
+// ========== 답 선택 처리 ==========
+function handleChoice(btn, val, answer, e) {
+  if (state.locked || state.gameOver) return;
+
+  if (val === answer) {
+    state.locked = true;
+    state.combo++;
+    if (state.combo > state.maxCombo) state.maxCombo = state.combo;
+
+    // 시간 보너스
+    state.timeLeft = Math.min(TIME_MAX, state.timeLeft + TIME_BONUS);
+    updateGauge();
+    showBonus('+' + TIME_BONUS + '초');
+
+    // 점수 배지 업데이트
+    $('score-badge').textContent = `⭐ ${state.step}개`;
+
+    // 효과
+    playCorrect();
+    btn.classList.add('correct');
+    $('problem').classList.add('pop');
+    $('flash').classList.add('show');
+
+    // 빨간 색연필 동그라미!
+    const circle = $('circle-svg');
+    circle.classList.remove('show');
+    void circle.offsetWidth;
+    // 살짝 비뚤게 — 매번 다른 각도로 그려진 느낌
+    const tilt = (Math.random() - 0.5) * 8;
+    circle.style.transform = `translate(-50%, -50%) rotate(${tilt}deg)`;
+    circle.classList.add('show');
+
+    const rect = btn.getBoundingClientRect();
+    spawnParticles(
+      rect.left + rect.width / 2,
+      rect.top + rect.height / 2,
+      ['#4ade80', '#fbbf24', '#60a5fa', '#f472b6'][Math.floor(Math.random()*4)],
+      30
+    );
+
+    // 콤보 표시 (3 이상)
+    if (state.combo >= 3) {
+      const cd = $('combo-display');
+      cd.textContent = `🔥 ${state.combo} 콤보!`;
+      cd.classList.remove('show');
+      void cd.offsetWidth;
+      cd.classList.add('show');
+    }
+
+    // 외운 문장 누적
+    state.recited.push(`${state.dan}×${state.step}=${answer}`);
+    const recEl = $('recited');
+    const span = document.createElement('span');
+    span.textContent = state.recited[state.recited.length - 1];
+    recEl.appendChild(span);
+
+    setTimeout(() => {
+      $('flash').classList.remove('show');
+      $('circle-svg').classList.remove('show');
+      state.step++;
+      if (state.step > 9) {
+        completeGame();
+      } else {
+        state.locked = false;
+        showProblem();
+      }
+    }, 450);
+  } else {
+    // 오답: 시간 패널티
+    playWrong();
+    state.combo = 0;
+    state.timeLeft = Math.max(0, state.timeLeft - 1);
+    updateGauge();
+    btn.classList.add('wrong');
+    $('problem').classList.add('shake');
+    setTimeout(() => {
+      btn.classList.remove('wrong');
+      $('problem').classList.remove('shake');
+    }, 500);
+  }
+}
+
+// ========== 게임 오버 ==========
+function gameOver() {
+  if (state.gameOver) return;
+  state.gameOver = true;
+  clearInterval(state.timerInterval);
+  playWrong();
+  setTimeout(() => playTone(150, 0.4, 'square', 0.2), 100);
+
+  // 게이지 폭발 파티클
+  const gaugeEl = document.querySelector('.gauge');
+  if (gaugeEl) {
+    const rect = gaugeEl.getBoundingClientRect();
+    for (let i = 0; i < 3; i++) {
+      setTimeout(() => {
+        spawnParticles(
+          rect.left + rect.width / 2,
+          rect.top + 20,
+          ['#ef4444', '#f59e0b', '#fbbf24'][i],
+          35
+        );
+      }, i * 100);
+    }
+  }
+
+  $('gameover-stats').textContent = `×${state.step - 1}까지 외웠어요 (최고 콤보 ${state.maxCombo})`;
+  setTimeout(() => {
+    $('gameover-screen').classList.add('active');
+  }, 500);
+}
+
+// ========== 단 완성 ==========
+function completeGame() {
+  clearInterval(state.timerInterval);
+  const elapsed = ((performance.now() - state.startTime) / 1000).toFixed(1);
+  playComplete();
+
+  // 화면 가득 색종이
+  for (let i = 0; i < 4; i++) {
+    setTimeout(() => {
+      const x = Math.random() * window.innerWidth;
+      const y = window.innerHeight * 0.3;
+      spawnParticles(x, y,
+        ['#4ade80', '#fbbf24', '#60a5fa', '#f472b6', '#a78bfa'][Math.floor(Math.random()*5)],
+        40
+      );
+    }, i * 150);
+  }
+
+  $('complete-title').textContent = `${state.dan}단 클리어! 🎉`;
+  $('complete-stats').textContent = `${elapsed}초 · 최고 콤보 ${state.maxCombo}`;
+  $('complete-recited').innerHTML = state.recited.map(r => `<div>${r}</div>`).join('');
+
+  if (state.mode === 'all' && state.allQueue.length > 0) {
+    $('next-btn').textContent = `${state.allQueue[0]}단 →`;
+  } else {
+    $('next-btn').textContent = '다시!';
+  }
+
+  setTimeout(() => {
+    $('complete-screen').classList.add('active');
+  }, 400);
+}
+
+// ========== 완성 후 버튼 ==========
+$('back-btn').addEventListener('click', () => {
+  playTap();
+  goHome();
+});
+
+$('home-btn').addEventListener('click', () => {
+  playTap();
+  goHome();
+});
+
+function goHome() {
+  clearInterval(state.timerInterval);
+  $('game-screen').classList.remove('active');
+  $('start-screen').style.display = 'flex';
+  $('complete-screen').classList.remove('active');
+  state.mode = 'single';
+  state.allQueue = [];
+}
+
+$('next-btn').addEventListener('click', () => {
+  playTap();
+  if (state.mode === 'all' && state.allQueue.length > 0) {
+    state.dan = state.allQueue.shift();
+  }
+  startGame();
+});
+
+$('gameover-back').addEventListener('click', () => {
+  playTap();
+  goHome();
+});
+
+$('gameover-retry').addEventListener('click', () => {
+  playTap();
+  startGame();
+});
+
+</script>
+</body>
+</html>

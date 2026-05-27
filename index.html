@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1">
+<meta name="theme-color" content="#7C3AED">
+<title>구구단 놀이터 🎉</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Gaegu:wght@700&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --bg-1: #FFF4D6;
+    --bg-2: #FFE5F1;
+    --bg-3: #D6F0FF;
+    --ink: #2D2A4A;
+    --ink-soft: #5B5780;
+    --shadow: 0 8px 24px rgba(45, 42, 74, 0.12);
+    --shadow-hover: 0 12px 32px rgba(45, 42, 74, 0.18);
+  }
+
+  html, body {
+    min-height: 100vh;
+    font-family: 'Jua', 'Gaegu', system-ui, sans-serif;
+    color: var(--ink);
+    background:
+      radial-gradient(circle at 15% 10%, rgba(255, 196, 226, 0.6) 0%, transparent 45%),
+      radial-gradient(circle at 85% 20%, rgba(190, 230, 255, 0.7) 0%, transparent 50%),
+      radial-gradient(circle at 50% 100%, rgba(255, 235, 180, 0.6) 0%, transparent 50%),
+      linear-gradient(180deg, var(--bg-2) 0%, var(--bg-1) 50%, var(--bg-3) 100%);
+    background-attachment: fixed;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 28px 18px 40px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 28px;
+    animation: fadeDown 0.6s ease-out;
+  }
+
+  h1 {
+    font-size: clamp(32px, 7vw, 44px);
+    letter-spacing: -0.5px;
+    color: var(--ink);
+    text-shadow: 2px 3px 0 rgba(255, 255, 255, 0.6);
+  }
+
+  .subtitle {
+    margin-top: 6px;
+    font-size: clamp(14px, 3.5vw, 17px);
+    color: var(--ink-soft);
+    font-family: 'Gaegu', sans-serif;
+    font-weight: 700;
+  }
+
+  main {
+    width: 100%;
+    max-width: 880px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 14px;
+  }
+
+  @media (min-width: 540px) {
+    .grid { gap: 18px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+  }
+
+  .card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 22px 14px 18px;
+    border-radius: 24px;
+    background: #fff;
+    box-shadow: var(--shadow);
+    text-decoration: none;
+    color: var(--ink);
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+    overflow: hidden;
+    animation: fadeUp 0.5s ease-out both;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--card-tint, transparent);
+    opacity: 0.55;
+    z-index: 0;
+  }
+
+  .card > * { position: relative; z-index: 1; }
+
+  .card:active { transform: scale(0.97); }
+
+  @media (hover: hover) {
+    .card:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); }
+  }
+
+  .emoji {
+    font-size: clamp(40px, 9vw, 52px);
+    line-height: 1;
+    margin-bottom: 10px;
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
+  }
+
+  .title {
+    font-size: clamp(17px, 4.2vw, 20px);
+    margin-bottom: 4px;
+  }
+
+  .desc {
+    font-size: clamp(12px, 3vw, 14px);
+    color: var(--ink-soft);
+    font-family: 'Gaegu', sans-serif;
+    font-weight: 700;
+    line-height: 1.35;
+  }
+
+  /* 카드별 배경 색감 */
+  .card.c1 { --card-tint: linear-gradient(135deg, #FFE0EC, #FFF3F8); }
+  .card.c2 { --card-tint: linear-gradient(135deg, #E0E7FF, #F0F4FF); }
+  .card.c3 { --card-tint: linear-gradient(135deg, #FFE9D6, #FFF6EC); }
+  .card.c4 { --card-tint: linear-gradient(135deg, #DCFCE7, #F0FDF4); }
+  .card.c5 { --card-tint: linear-gradient(135deg, #FEF3C7, #FFFBEB); }
+  .card.c6 { --card-tint: linear-gradient(135deg, #FECACA, #FEF2F2); }
+  .card.c7 { --card-tint: linear-gradient(135deg, #DDD6FE, #F5F3FF); }
+
+  /* 카드 등장 딜레이 */
+  .card:nth-child(1) { animation-delay: 0.05s; }
+  .card:nth-child(2) { animation-delay: 0.10s; }
+  .card:nth-child(3) { animation-delay: 0.15s; }
+  .card:nth-child(4) { animation-delay: 0.20s; }
+  .card:nth-child(5) { animation-delay: 0.25s; }
+  .card:nth-child(6) { animation-delay: 0.30s; }
+  .card:nth-child(7) { animation-delay: 0.35s; }
+
+  footer {
+    margin-top: 32px;
+    font-size: 13px;
+    color: var(--ink-soft);
+    font-family: 'Gaegu', sans-serif;
+    font-weight: 700;
+    opacity: 0.75;
+  }
+
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+  <header>
+    <h1>구구단 놀이터 🎉</h1>
+    <p class="subtitle">어떤 놀이로 구구단을 만나볼까?</p>
+  </header>
+
+  <main>
+    <div class="grid">
+      <a class="card c1" href="flash-card/">
+        <div class="emoji">✨</div>
+        <div class="title">구구단 카드</div>
+        <div class="desc">카드를 넘기며 외우기</div>
+      </a>
+
+      <a class="card c2" href="gugu-master/">
+        <div class="emoji">🌌</div>
+        <div class="title">구구단 외우기</div>
+        <div class="desc">단계별로 차근차근</div>
+      </a>
+
+      <a class="card c3" href="balloon/">
+        <div class="emoji">🎈</div>
+        <div class="title">풍선 터뜨리기</div>
+        <div class="desc">정답 풍선을 빠르게</div>
+      </a>
+
+      <a class="card c4" href="factor-pairs/">
+        <div class="emoji">🌟</div>
+        <div class="title">몫창 게임</div>
+        <div class="desc">같은 답이 되는 짝 찾기</div>
+      </a>
+
+      <a class="card c5" href="egg-timer/">
+        <div class="emoji">🥚</div>
+        <div class="title">알 부화 타이머</div>
+        <div class="desc">답을 맞혀서 알을 부화</div>
+      </a>
+
+      <a class="card c6" href="bomb-timer/">
+        <div class="emoji">💣</div>
+        <div class="title">폭탄 해제</div>
+        <div class="desc">시간 안에 정답을!</div>
+      </a>
+
+      <a class="card c7" href="hundred/">
+        <div class="emoji">💯</div>
+        <div class="title">백판 게임</div>
+        <div class="desc">곱셈표 칸 채우기</div>
+      </a>
+    </div>
+  </main>
+
+  <footer>made with ♡</footer>
+</body>
+</html>

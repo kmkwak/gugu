@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>구구단 챌린지</title>
+<link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Jua', system-ui, sans-serif;
+  background: linear-gradient(180deg, #EFF6FF 0%, #DBEAFE 50%, #F3E8FF 100%);
+  min-height: 100vh;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.screen { display: none; }
+.screen.on { display: flex; flex-direction: column; }
+
+/* ── MENU ─────────────────── */
+#menu {
+  align-items: center;
+  min-height: 100vh;
+  padding: 36px 20px 32px;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.level-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  width: 100%;
+  max-width: 320px;
+  margin-bottom: 10px;
+}
+
+.level-btn {
+  aspect-ratio: 1;
+  border-radius: 18px;
+  background: white;
+  border: 2px solid transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  cursor: pointer;
+  transition: transform .1s;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(0,0,0,.06);
+}
+.level-btn:active { transform: scale(.95); }
+.level-btn .emoji { font-size: 26px; line-height: 1; }
+.level-btn .name  { font-size: 13px; font-weight: 900; }
+.level-btn .hi    { font-size: 8px; color: #A8A29E; position: absolute; bottom: 5px; }
+
+#all-btn {
+  width: 100%;
+  max-width: 320px;
+  padding: 14px 20px;
+  border-radius: 18px;
+  border: none;
+  color: white;
+  font-family: 'Jua', sans-serif;
+  font-size: 16px;
+  font-weight: 900;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.15);
+  transition: transform .1s;
+}
+#all-btn:active { transform: scale(.97); }
+
+/* ── PLAY ─────────────────── */
+/* 패드에서도 꽉 차도록 max-width 제거 */
+#play {
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* 그리드: 화면 높이와 너비 중 작은 쪽 기준으로 자동 확장 */
+#grid {
+  width: min(calc(100dvh - 240px), 95vw);
+  aspect-ratio: 1;
+  container-type: inline-size;   /* cqi 단위 활성화 */
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 2px;
+  background: white;
+  border-radius: 18px;
+  padding: 6px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.1), 0 2px 4px rgba(0,0,0,.05);
+  border: 2px solid #E7E5E4;
+}
+
+/* 폰트 크기를 그리드 크기에 비례하도록 cqi 사용 */
+.cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  font-size: 2.3cqi;
+  font-weight: 800;
+  transition: transform .1s, background .1s;
+}
+.c-corner   { color: #D6D3D1; font-size: 2cqi; }
+.c-header   { font-weight: 900; }
+.c-inactive { background: #F5F5F4; opacity: .35; }
+.c-empty    { background: #FEF9C3; color: #A16207; }
+.c-filled   { background: #FAFAF9; color: #44403C; box-shadow: inset 0 0 0 1px #E7E5E4; }
+.c-hover    { transform: scale(1.08); }
+
+@keyframes shake {
+  0%,100% { transform:translateX(0); }
+  25%     { transform:translateX(-4px); }
+  75%     { transform:translateX(4px); }
+}
+.c-correct { background:#22C55E!important; color:#fff!important; transform:scale(1.2)!important; }
+.c-wrong   { background:#EF4444!important; color:#fff!important; animation:shake .3s ease-in-out; }
+
+.grid-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 8px;
+  min-height: 0;
+}
+
+/* ── TILE ─────────────────── */
+/* 타일 크기도 뷰포트 단위로 확장 (vmin = 너비/높이 중 작은 쪽) */
+:root { --tile-sz: clamp(72px, 13vmin, 120px); }
+
+.tile-area {
+  flex-shrink: 0;
+  padding: 8px 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+#tile {
+  width: var(--tile-sz);
+  height: var(--tile-sz);
+  border-radius: calc(var(--tile-sz) / 4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 900;
+  cursor: grab;
+  touch-action: none;
+  transition: transform .15s, opacity .15s, box-shadow .15s;
+  animation: bob 2s ease-in-out infinite;
+}
+#tile.dragging { transform: scale(.85); opacity: .25; animation: none; }
+
+@keyframes bob {
+  0%,100% { transform:scale(1) translateY(0); }
+  50%     { transform:scale(1.04) translateY(-3px); }
+}
+
+#ghost {
+  position: fixed;
+  width: var(--tile-sz);
+  height: var(--tile-sz);
+  border-radius: calc(var(--tile-sz) / 4);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 900;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%,-50%) scale(1.15) rotate(-3deg);
+}
+
+/* ── WON ─────────────────── */
+#won {
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  padding: 40px 24px;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+@keyframes bounce-in {
+  0%  { transform:scale(0) rotate(-180deg); }
+  60% { transform:scale(1.2) rotate(10deg); }
+  100%{ transform:scale(1) rotate(0); }
+}
+
+.stat-box {
+  width: 100%; max-width: 280px;
+  background: white;
+  border-radius: 24px;
+  padding: 22px 24px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.07);
+  border: 1px solid #F0EFEE;
+  margin-top: 20px;
+}
+.stat-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+.stat-row:last-child { margin-bottom:0; }
+
+.btn {
+  border: none; border-radius: 14px;
+  font-family: 'Jua', sans-serif;
+  font-size: 15px; font-weight: 900;
+  cursor: pointer;
+  transition: transform .1s;
+  padding: 14px 16px;
+}
+.btn:active { transform: scale(.96); }
+.btn-primary { color:white; width:100%; }
+.btn-gray    { background:#F5F5F4; color:#44403C; flex:1; }
+</style>
+</head>
+<body>
+
+<!-- MENU -->
+<div id="menu" class="screen">
+  <div style="text-align:center;margin-bottom:28px;">
+    <div style="font-size:44px;margin-bottom:8px;">×</div>
+    <h1 style="font-size:26px;color:#1C1917;">구구단 챌린지</h1>
+    <p style="color:#78716C;font-size:13px;margin-top:6px;">나오는 숫자를 맞는 칸으로 드래그!</p>
+  </div>
+  <p style="font-size:10px;color:#A8A29E;text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;">단 선택</p>
+  <div class="level-grid" id="level-grid"></div>
+  <button id="all-btn">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="font-size:20px;">🏆</span>
+      <div style="text-align:left;">
+        <div>종합 도전</div>
+        <div style="font-size:11px;opacity:.8;font-weight:700;">전체 81칸</div>
+      </div>
+    </div>
+    <span id="all-hi" style="font-size:11px;background:rgba(255,255,255,.2);padding:4px 8px;border-radius:8px;display:none;"></span>
+  </button>
+</div>
+
+<!-- PLAY -->
+<div id="play" class="screen">
+  <div style="padding:12px 12px 0;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-shrink:0;">
+    <button class="btn btn-gray" id="back-btn" style="flex:none;padding:6px 12px;font-size:12px;">← 나가기</button>
+    <div id="level-label" style="font-size:14px;font-weight:900;"></div>
+    <div id="score-badge" style="padding:4px 10px;border-radius:999px;font-size:11px;font-weight:900;color:white;font-family:monospace;white-space:nowrap;">0점</div>
+  </div>
+  <div style="padding:5px 12px 0;display:flex;align-items:center;gap:7px;flex-shrink:0;">
+    <span id="timer-txt" style="font-size:10px;color:#A8A29E;font-family:monospace;white-space:nowrap;">⏱ 00:00</span>
+    <span id="prog-txt" style="font-size:10px;color:#A8A29E;white-space:nowrap;">0/0</span>
+    <div style="flex:1;height:5px;background:#E7E5E4;border-radius:3px;overflow:hidden;">
+      <div id="prog-bar" style="height:100%;border-radius:3px;width:0%;transition:width .3s;"></div>
+    </div>
+    <div id="combo-badge" style="display:none;font-size:10px;font-weight:900;color:white;padding:2px 7px;border-radius:999px;white-space:nowrap;"></div>
+  </div>
+  <div class="grid-wrap"><div id="grid"></div></div>
+  <div class="tile-area">
+    <div style="display:flex;flex-direction:column;align-items:center;opacity:.5;">
+      <div style="font-size:10px;color:#A8A29E;font-weight:700;margin-bottom:4px;">NEXT</div>
+      <div id="next-tile" style="border-radius:12px;background:white;border:2px solid #E7E5E4;display:flex;align-items:center;justify-content:center;font-weight:900;color:#57534E;font-family:'Jua',sans-serif;"></div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;">
+      <div style="font-size:10px;color:#A8A29E;font-weight:700;margin-bottom:4px;letter-spacing:2px;">드래그 ↓</div>
+      <div id="tile" style="font-family:'Jua',sans-serif;"></div>
+    </div>
+    <div id="tile-spacer"></div>
+  </div>
+</div>
+
+<!-- GHOST -->
+<div id="ghost" style="font-family:'Jua',sans-serif;"></div>
+
+<!-- WON -->
+<div id="won" class="screen">
+  <div id="won-emoji" style="font-size:64px;margin-bottom:12px;display:block;animation:bounce-in .6s ease-out;">🎉</div>
+  <h2 id="won-title" style="font-size:26px;font-weight:900;margin-bottom:3px;"></h2>
+  <div id="won-hi" style="color:#F59E0B;font-weight:700;font-size:13px;margin-bottom:2px;display:none;">✨ 신기록</div>
+  <div class="stat-box">
+    <div class="stat-row" style="margin-bottom:14px;">
+      <span style="color:#A8A29E;font-size:13px;">점수</span>
+      <span id="won-score" style="font-size:26px;font-weight:900;color:#1C1917;font-family:'Jua',sans-serif;"></span>
+    </div>
+    <hr style="border:none;border-top:1px solid #F0EFEE;margin-bottom:14px;">
+    <div class="stat-row"><span style="color:#A8A29E;font-size:13px;">시간</span><span id="won-time" style="font-weight:900;color:#44403C;font-family:'Jua',sans-serif;"></span></div>
+    <div class="stat-row"><span style="color:#A8A29E;font-size:13px;">최대 콤보</span><span id="won-combo" style="font-weight:900;color:#44403C;font-family:'Jua',sans-serif;"></span></div>
+    <div class="stat-row"><span style="color:#A8A29E;font-size:13px;">실수</span><span id="won-mistakes" style="font-weight:900;color:#44403C;font-family:'Jua',sans-serif;"></span></div>
+  </div>
+  <div style="margin-top:24px;width:100%;max-width:280px;display:flex;flex-direction:column;gap:8px;">
+    <button id="next-btn" class="btn btn-primary" style="font-family:'Jua',sans-serif;"></button>
+    <div style="display:flex;gap:8px;">
+      <button id="again-btn" class="btn btn-gray" style="font-family:'Jua',sans-serif;">다시</button>
+      <button id="menu-btn"  class="btn btn-gray" style="font-family:'Jua',sans-serif;">메뉴</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const LEVELS = [
+  { id:1, name:'1단', emoji:'①', accent:'#06B6D4' },
+  { id:2, name:'2단', emoji:'②', accent:'#10B981' },
+  { id:3, name:'3단', emoji:'③', accent:'#84CC16' },
+  { id:4, name:'4단', emoji:'④', accent:'#F59E0B' },
+  { id:5, name:'5단', emoji:'⑤', accent:'#EF4444' },
+  { id:6, name:'6단', emoji:'⑥', accent:'#EC4899' },
+  { id:7, name:'7단', emoji:'⑦', accent:'#A855F7' },
+  { id:8, name:'8단', emoji:'⑧', accent:'#6366F1' },
+  { id:9, name:'9단', emoji:'⑨', accent:'#0EA5E9' },
+  { id:0, name:'종합', emoji:'🏆', accent:'#F43F5E', isAll:true },
+];
+
+const $ = id => document.getElementById(id);
+const $grid       = $('grid');
+const $tile       = $('tile');
+const $nextTile   = $('next-tile');
+const $ghost      = $('ghost');
+const $scoreBadge = $('score-badge');
+const $timerTxt   = $('timer-txt');
+const $progTxt    = $('prog-txt');
+const $progBar    = $('prog-bar');
+const $comboBadge = $('combo-badge');
+const $levelLabel = $('level-label');
+
+const screens = { menu: $('menu'), play: $('play'), won: $('won') };
+function showScreen(name) {
+  Object.values(screens).forEach(s => s.classList.remove('on'));
+  screens[name].classList.add('on');
+}
+
+const hi = {};
+let G = {};
+let tickInterval = null;
+let flashTimer   = null;
+
+function getLevel(id) { return LEVELS.find(l => l.id === id); }
+
+// 타일 실제 크기를 CSS --tile-sz 계산과 동일하게 구함 (clamp(72, 13vmin, 120))
+function tileSz() {
+  return Math.min(120, Math.max(72, Math.min(window.innerWidth, window.innerHeight) * 0.13));
+}
+
+function makeBoard(levelId) {
+  const isAll = levelId === 0;
+  return Array.from({ length: 81 }, (_, i) => {
+    const r = Math.floor(i / 9), c = i % 9;
+    return {
+      row: r, col: c,
+      product: (r+1)*(c+1),
+      isActive: isAll || (r+1 === levelId) || (c+1 === levelId),
+      filled: false,
+    };
+  });
+}
+
+function pickRandom(cells) {
+  const e = cells.filter(c => c.isActive && !c.filled);
+  return e.length ? e[Math.floor(Math.random() * e.length)].product : null;
+}
+
+function fmt(s) {
+  return String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0');
+}
+
+// ── MENU ──────────────────────────────────────────────
+function buildMenu() {
+  const grid = $('level-grid');
+  grid.innerHTML = '';
+  LEVELS.filter(l => !l.isAll).forEach(l => {
+    const btn = document.createElement('button');
+    btn.className = 'level-btn';
+    btn.style.borderColor = l.accent + '55';
+    btn.innerHTML = `
+      <span class="emoji" style="color:${l.accent}">${l.emoji}</span>
+      <span class="name" style="color:${l.accent}">${l.name}</span>
+      ${hi[l.id] ? `<span class="hi">🏆 ${hi[l.id].toLocaleString()}</span>` : ''}
+    `;
+    btn.addEventListener('click', () => startGame(l.id));
+    grid.appendChild(btn);
+  });
+  const all = LEVELS.find(l => l.isAll);
+  $('all-btn').style.background = `linear-gradient(135deg, ${all.accent}, #BE123C)`;
+  const hiEl = $('all-hi');
+  if (hi[0]) { hiEl.textContent = `🏆 ${hi[0].toLocaleString()}`; hiEl.style.display = 'inline'; }
+  else        { hiEl.style.display = 'none'; }
+}
+
+// ── START ──────────────────────────────────────────────
+function startGame(id) {
+  clearInterval(tickInterval);
+  const cells = makeBoard(id);
+  G = {
+    levelId: id,
+    cells,
+    cur: pickRandom(cells),
+    nxt: pickRandom(cells),
+    totalActive: cells.filter(c => c.isActive).length,
+    timer: 0, score: 0, combo: 0, maxCombo: 0, mistakes: 0,
+  };
+
+  const acc = getLevel(id).accent;
+  $scoreBadge.style.background = acc;
+  $progBar.style.background    = acc;
+  $levelLabel.textContent      = `${getLevel(id).emoji} ${getLevel(id).name}`;
+  $levelLabel.style.color      = acc;
+
+  // 스페이서를 next-tile과 같은 너비로 맞춰 타일을 정중앙에 유지
+  const nxtSz = Math.round(tileSz() * 0.57);
+  $nextTile.style.width  = nxtSz + 'px';
+  $nextTile.style.height = nxtSz + 'px';
+  $('tile-spacer').style.width = nxtSz + 'px';
+
+  tickInterval = setInterval(() => { G.timer++; renderHUD(); }, 1000);
+
+  buildGrid();
+  renderTile();
+  renderHUD();
+  showScreen('play');
+}
+
+// ── GRID ───────────────────────────────────────────────
+function buildGrid() {
+  const acc = getLevel(G.levelId).accent;
+  $grid.innerHTML = '';
+
+  const corner = make('div', 'cell c-corner', '×');
+  $grid.appendChild(corner);
+
+  for (let c = 1; c <= 9; c++) {
+    const h = make('div', 'cell c-header', String(c));
+    h.style.background = acc + '22';
+    h.style.color = acc;
+    $grid.appendChild(h);
+  }
+
+  for (let r = 1; r <= 9; r++) {
+    const rh = make('div', 'cell c-header', String(r));
+    rh.style.background = acc + '22';
+    rh.style.color = acc;
+    $grid.appendChild(rh);
+
+    for (let c = 1; c <= 9; c++) {
+      const idx = (r-1)*9 + (c-1);
+      const cell = G.cells[idx];
+      const el = make('div', 'cell ' + (cell.isActive ? 'c-empty' : 'c-inactive'));
+      el.dataset.idx = idx;
+      $grid.appendChild(el);
+    }
+  }
+}
+
+function make(tag, cls, text='') {
+  const el = document.createElement(tag);
+  if (cls) el.className = cls;
+  if (text) el.textContent = text;
+  return el;
+}
+
+function cellEl(idx) { return $grid.querySelector(`[data-idx="${idx}"]`); }
+
+function refreshCell(idx) {
+  const el = cellEl(idx); if (!el) return;
+  const c = G.cells[idx];
+  el.className = 'cell ' + (c.isActive ? (c.filled ? 'c-filled' : 'c-empty') : 'c-inactive');
+  el.textContent = c.filled ? c.product : '';
+}
+
+function flashCell(idx, type) {
+  const el = cellEl(idx); if (!el) return;
+  el.classList.add(type === 'correct' ? 'c-correct' : 'c-wrong');
+  clearTimeout(flashTimer);
+  flashTimer = setTimeout(() => { el.classList.remove('c-correct','c-wrong'); refreshCell(idx); },
+    type === 'correct' ? 400 : 500);
+}
+
+// ── TILE ───────────────────────────────────────────────
+function renderTile() {
+  const acc = getLevel(G.levelId).accent;
+  const sz  = tileSz();
+  const n   = G.cur;
+
+  $tile.textContent       = n ?? '🎉';
+  $tile.style.fontSize    = (n && n >= 10 ? sz * 0.44 : sz * 0.52) + 'px';
+  $tile.style.background  = `linear-gradient(135deg, ${acc}, ${acc}cc)`;
+  $tile.style.boxShadow   = `0 10px 28px ${acc}55, inset 0 -4px 0 rgba(0,0,0,.15)`;
+
+  const nxtSz = Math.round(sz * 0.57);
+  $nextTile.textContent    = G.nxt ?? '·';
+  $nextTile.style.fontSize = (G.nxt && G.nxt >= 10 ? nxtSz * 0.44 : nxtSz * 0.52) + 'px';
+}
+
+// ── HUD ────────────────────────────────────────────────
+function renderHUD() {
+  const filled = G.cells.filter(c => c.isActive && c.filled).length;
+  $scoreBadge.textContent = G.score.toLocaleString() + '점';
+  $timerTxt.textContent   = '⏱ ' + fmt(G.timer);
+  $progTxt.textContent    = `${filled}/${G.totalActive}`;
+  $progBar.style.width    = `${(filled / G.totalActive) * 100}%`;
+  if (G.combo >= 3) {
+    $comboBadge.style.display    = 'block';
+    $comboBadge.style.background = getLevel(G.levelId).accent;
+    $comboBadge.textContent      = `🔥${G.combo}`;
+  } else {
+    $comboBadge.style.display = 'none';
+  }
+}
+
+// ── PLACE ──────────────────────────────────────────────
+function place(idx) {
+  if (idx == null || G.cur == null) return;
+  const c = G.cells[idx];
+  if (!c || !c.isActive || c.filled || c.product !== G.cur) {
+    G.mistakes++;
+    G.combo = 0;
+    G.score = Math.max(0, G.score - 5);
+    flashCell(idx, 'wrong');
+    renderHUD();
+    return;
+  }
+  G.cells[idx] = { ...c, filled: true };
+  G.combo++;
+  G.maxCombo = Math.max(G.maxCombo, G.combo);
+  G.score += 10 * G.combo;
+  flashCell(idx, 'correct');
+  G.cur = G.nxt;
+  G.nxt = pickRandom(G.cells);
+  renderTile();
+  renderHUD();
+
+  if (G.cells.filter(c => c.isActive).every(c => c.filled)) {
+    setTimeout(showWon, 600);
+  }
+}
+
+// ── WIN ────────────────────────────────────────────────
+function showWon() {
+  clearInterval(tickInterval);
+  const level  = getLevel(G.levelId);
+  const tBonus = Math.max(0, 1500 - G.timer * (G.levelId === 0 ? 3 : 8));
+  const aBonus = G.mistakes === 0 ? 500 : Math.max(0, 300 - G.mistakes * 30);
+  const final  = G.score + tBonus + aBonus;
+  const isNewHi = final > (hi[G.levelId] || 0);
+  hi[G.levelId] = Math.max(hi[G.levelId] || 0, final);
+
+  $('won-title').textContent    = `${level.name} 완성!`;
+  $('won-title').style.color    = level.accent;
+  $('won-score').textContent    = final.toLocaleString();
+  $('won-time').textContent     = fmt(G.timer);
+  $('won-combo').textContent    = `×${G.maxCombo}`;
+  $('won-mistakes').textContent = `${G.mistakes}회`;
+  $('won-hi').style.display     = isNewHi ? 'block' : 'none';
+
+  const nextId  = G.levelId === 9 ? 0 : G.levelId === 0 ? 1 : G.levelId + 1;
+  const nextLv  = getLevel(nextId);
+  const nextBtn = $('next-btn');
+  nextBtn.textContent      = `${nextLv.emoji} ${nextLv.name} 도전 →`;
+  nextBtn.style.background = nextLv.accent;
+  nextBtn.onclick = () => startGame(nextId);
+
+  showScreen('won');
+}
+
+// ── DRAG ───────────────────────────────────────────────
+let dragging = false, hovIdx = null;
+
+function moveGhost(x, y) {
+  $ghost.style.left = x + 'px';
+  $ghost.style.top  = y + 'px';
+}
+
+function setHover(idx) {
+  if (hovIdx !== null) { const el = cellEl(hovIdx); if (el) el.classList.remove('c-hover'); }
+  hovIdx = idx;
+  if (hovIdx !== null) { const el = cellEl(hovIdx); if (el) el.classList.add('c-hover'); }
+}
+
+$tile.addEventListener('pointerdown', e => {
+  if (!G.cur) return;
+  e.preventDefault();
+  dragging = true;
+  $tile.classList.add('dragging');
+  const acc = getLevel(G.levelId).accent;
+  const sz  = tileSz();
+  $ghost.textContent    = G.cur;
+  $ghost.style.fontSize = (G.cur >= 10 ? sz * 0.44 : sz * 0.52) + 'px';
+  $ghost.style.background = `linear-gradient(135deg, ${acc}, ${acc}dd)`;
+  $ghost.style.boxShadow  = `0 16px 40px ${acc}88, 0 4px 12px rgba(0,0,0,.2), inset 0 -4px 0 rgba(0,0,0,.2)`;
+  $ghost.style.display = 'flex';
+  moveGhost(e.clientX, e.clientY);
+  try { $tile.setPointerCapture(e.pointerId); } catch(_) {}
+});
+
+$tile.addEventListener('pointermove', e => {
+  if (!dragging) return;
+  moveGhost(e.clientX, e.clientY);
+  const el = document.elementFromPoint(e.clientX, e.clientY);
+  setHover(el?.dataset?.idx != null ? parseInt(el.dataset.idx) : null);
+});
+
+function endDrag() {
+  if (!dragging) return;
+  dragging = false;
+  $tile.classList.remove('dragging');
+  $ghost.style.display = 'none';
+  const idx = hovIdx;
+  setHover(null);
+  if (idx !== null) place(idx);
+}
+
+$tile.addEventListener('pointerup',     endDrag);
+$tile.addEventListener('pointercancel', endDrag);
+
+// ── BUTTONS ────────────────────────────────────────────
+$('back-btn').addEventListener('click', () => {
+  clearInterval(tickInterval);
+  buildMenu();
+  showScreen('menu');
+});
+$('again-btn').addEventListener('click', () => startGame(G.levelId));
+$('menu-btn').addEventListener('click',  () => { buildMenu(); showScreen('menu'); });
+$('all-btn').addEventListener('click',   () => startGame(0));
+
+// ── INIT ───────────────────────────────────────────────
+buildMenu();
+showScreen('menu');
+</script>
+</body>
+</html>
