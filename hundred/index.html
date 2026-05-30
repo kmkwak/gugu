@@ -359,9 +359,18 @@ function makeBoard(levelId) {
   });
 }
 
-function pickRandom(cells) {
-  const e = cells.filter(c => c.isActive && !c.filled);
-  return e.length ? e[Math.floor(Math.random() * e.length)].product : null;
+// 빈 활성 칸의 곱을 모두 담은 백(bag)을 섞어 반환
+function makeBag(cells) {
+  const bag = cells.filter(c => c.isActive && !c.filled).map(c => c.product);
+  for (let i = bag.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [bag[i], bag[j]] = [bag[j], bag[i]];
+  }
+  return bag;
+}
+
+function drawFromBag() {
+  return G.bag.length ? G.bag.pop() : null;
 }
 
 function fmt(s) {
@@ -395,11 +404,13 @@ function buildMenu() {
 function startGame(id) {
   clearInterval(tickInterval);
   const cells = makeBoard(id);
+  const bag = makeBag(cells);
   G = {
     levelId: id,
     cells,
-    cur: pickRandom(cells),
-    nxt: pickRandom(cells),
+    bag,
+    cur: bag.pop() ?? null,
+    nxt: bag.pop() ?? null,
     totalActive: cells.filter(c => c.isActive).length,
     timer: 0, score: 0, combo: 0, maxCombo: 0, mistakes: 0,
   };
@@ -529,7 +540,7 @@ function place(idx) {
   G.score += 10 * G.combo;
   flashCell(idx, 'correct');
   G.cur = G.nxt;
-  G.nxt = pickRandom(G.cells);
+  G.nxt = drawFromBag();
   renderTile();
   renderHUD();
 
